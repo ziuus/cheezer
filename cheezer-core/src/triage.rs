@@ -194,7 +194,7 @@ pub static TEST_MUTEX: Mutex<()> = Mutex::new(());
         let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::set_var("MOCK_EXECUTOR", "true");
-            std::env::remove_var("MOCK_LLM_RESPONSE");
+            std::env::set_var("MOCK_LLM_RESPONSE", "restart pod");
         }
         store::init_db().unwrap();
         store::clear_db().unwrap();
