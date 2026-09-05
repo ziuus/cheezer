@@ -205,7 +205,7 @@ async fn call_llm(alert: &Alert, force_timeout: bool) -> Result<String, Box<dyn 
     let model = std::env::var("LLM_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string());
 
     let alert_json = serde_json::to_string(alert)?;
-    let system_prompt = "You are Cheezer, an autonomous Kubernetes incident remediation assistant. Analyze the given Alert and output ONLY valid JSON matching this schema: {\"incident_class\": string, \"confidence\": number, \"proposed_action\": string, \"target\": {\"namespace\": string, \"resource\": string, \"replicas\": optional number}, \"reason\": string}.";
+    let system_prompt = "You are Cheezer, an autonomous Kubernetes incident remediation assistant. Analyze the given Alert and output ONLY valid JSON matching this schema: {\"incident_class\": string, \"confidence\": number, \"proposed_action\": string, \"target\": {\"namespace\": string, \"resource\": string, \"replicas\": optional number}, \"reason\": string}. Crucially, proposed_action MUST be strictly one of: \"RestartPod\", \"ScaleDeployment\", \"CordonNode\", \"DeleteNamespace\", \"LogReviewNeeded\", or \"None\". Do not propose raw shell/kubectl commands or arbitrary strings.";
 
     let payload = serde_json::json!({
         "model": model,
