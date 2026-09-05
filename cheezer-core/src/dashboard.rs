@@ -371,6 +371,7 @@ mod tests {
         let _guard = crate::triage::tests::TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::set_var("MOCK_EXECUTOR", "true");
+            std::env::set_var("MOCK_OPA_ENABLED", "true");
         }
         store::init_db().unwrap();
         store::clear_db().unwrap();

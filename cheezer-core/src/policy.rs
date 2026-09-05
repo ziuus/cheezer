@@ -35,6 +35,14 @@ pub async fn check_action(action: &Action) -> bool {
     let target_replicas = action.target_replicas();
     let command = action.commands();
 
+    // Fast-path offline fallback for test suites
+    if std::env::var("MOCK_OPA_ENABLED").unwrap_or_default() == "true" {
+        return evaluate_rego_embedded(action_type, resource, target_replicas, &command);
+    }
+
+    let opa_url = std::env::var("OPA_URL")
+        .unwrap_or_else(|_| "http://localhost:8181/v1/data/cheezer/authz/allow".to_string());
+
     let client = reqwest::Client::new();
     let query = OpaQuery {
         input: OpaInput {
@@ -45,7 +53,9 @@ pub async fn check_action(action: &Action) -> bool {
         },
     };
 
-    if let Ok(res) = client.post("http://localhost:8181/v1/data/cheezer/authz/allow")
+    // Real HTTP request to OPA daemon
+    if let Ok(res) = client
+        .post(&opa_url)
         .json(&query)
         .timeout(Duration::from_millis(500))
         .send()
@@ -59,12 +69,13 @@ pub async fn check_action(action: &Action) -> bool {
                 }
             }
         }
-        log::warn!("OPA HTTP server returned non-success response: {status}. Defaulting to FAIL-CLOSED (DENY).");
+        log::warn!("OPA HTTP daemon returned non-success response: {status}. Defaulting to FAIL-CLOSED (DENY).");
         return false;
     }
 
-    // Fallback embedded evaluator matching cheezer.rego logic if OPA HTTP server is offline
-    evaluate_rego_embedded(action_type, resource, target_replicas, &command)
+    // STRICT FAIL-CLOSED CONSTRAINT: Network errors, timeouts, or daemon offline default to DENY (false)
+    log::warn!("OPA HTTP daemon at '{}' unreachable/timed out. Defaulting to FAIL-CLOSED (DENY).", opa_url);
+    false
 }
 
 pub fn evaluate_rego_embedded(action: &str, resource: &str, target_replicas: u32, command: &[&str]) -> bool {
@@ -86,9 +97,16 @@ pub fn evaluate_rego_embedded(action: &str, resource: &str, target_replicas: u32
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
-    async fn test_opa_deny_rules() {
+    async fn test_opa_deny_rules_embedded() {
+        let _guard = crate::triage::tests::TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
+        unsafe {
+            std::env::set_var("MOCK_OPA_ENABLED", "true");
+        }
+
         // 1. Delete namespace -> Blocked
         let delete_ns = Action::DeleteNamespace { namespace: "production".to_string() };
         assert!(!check_action(&delete_ns).await, "Delete namespace MUST be blocked!");
@@ -111,10 +129,74 @@ mod tests {
 
         let scale_ok = Action::ScaleDeployment { deployment: "myapp".to_string(), target_replicas: 5, namespace: "default".to_string() };
         assert!(check_action(&scale_ok).await, "Scale <= 10 MUST be allowed!");
-        
+
         println!("SUCCESS: OPA policy rules verified - dangerous actions blocked, safe actions allowed!");
     }
+
+    #[tokio::test]
+    async fn test_policy_wiremock_real_http() {
+        let _guard = crate::triage::tests::TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
+        
+        let mock_server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/v1/data/cheezer/authz/allow"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "result": true
+            })))
+            .mount(&mock_server)
+            .await;
+
+        unsafe {
+            std::env::remove_var("MOCK_OPA_ENABLED");
+            std::env::set_var("OPA_URL", format!("{}/v1/data/cheezer/authz/allow", mock_server.uri()));
+        }
+
+        let restart_action = Action::RestartPod {
+            pod: "test-pod-wiremock".to_string(),
+            namespace: "default".to_string(),
+        };
+
+        let is_allowed = check_action(&restart_action).await;
+        assert!(is_allowed, "OPA wiremock HTTP response returning result:true MUST be allowed!");
+
+        unsafe {
+            std::env::remove_var("OPA_URL");
+            std::env::set_var("MOCK_OPA_ENABLED", "true");
+        }
+        println!("SUCCESS: Live OPA HTTP POST request verified via wiremock!");
+    }
+
+    #[tokio::test]
+    async fn test_opa_fail_closed_on_error() {
+        let _guard = crate::triage::tests::TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
+
+        let mock_server = MockServer::start().await;
+
+        // Simulate 500 Internal Server Error from OPA daemon
+        Mock::given(method("POST"))
+            .and(path("/v1/data/cheezer/authz/allow"))
+            .respond_with(ResponseTemplate::new(500))
+            .mount(&mock_server)
+            .await;
+
+        unsafe {
+            std::env::remove_var("MOCK_OPA_ENABLED");
+            std::env::set_var("OPA_URL", format!("{}/v1/data/cheezer/authz/allow", mock_server.uri()));
+        }
+
+        let restart_action = Action::RestartPod {
+            pod: "test-pod-wiremock".to_string(),
+            namespace: "default".to_string(),
+        };
+
+        let is_allowed = check_action(&restart_action).await;
+        assert!(!is_allowed, "Non-200 OPA daemon error status MUST default to FAIL-CLOSED (false)!");
+
+        unsafe {
+            std::env::remove_var("OPA_URL");
+            std::env::set_var("MOCK_OPA_ENABLED", "true");
+        }
+        println!("SUCCESS: OPA fail-closed check on HTTP 500 error verified!");
+    }
 }
-
-
-
