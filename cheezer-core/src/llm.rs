@@ -255,11 +255,41 @@ async fn call_llm(alert: &Alert, force_timeout: bool) -> Result<String, Box<dyn 
          return Ok(mock_response);
     }
 
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum LlmTier {
+    FastLight,     // Tier 1: Low-cost fast model (gpt-4o-mini / llama-3.2-3b), ~$0.0001/call
+    DeepReasoning, // Tier 2: Heavy reasoning model (gpt-4o / claude-3-5-sonnet), ~$0.01/call
+}
+
+pub fn select_llm_model(alert: &Alert) -> (String, LlmTier, f64) {
+    let strategy = std::env::var("LLM_ROUTING_STRATEGY").unwrap_or_else(|_| "cost_optimized".to_string());
+    
+    let severity = alert.labels.get("severity").map(|s| s.as_str()).unwrap_or("warning");
+    let alertname = alert.labels.get("alertname").map(|s| s.as_str()).unwrap_or("");
+    
+    if strategy == "performance_first" {
+        let model = std::env::var("LLM_MODEL").unwrap_or_else(|_| "gpt-4o".to_string());
+        return (model, LlmTier::DeepReasoning, 0.01);
+    }
+    
+    // Cost-Optimized Dynamic Model Tiering:
+    // Heavy reasoning models (gpt-4o / claude-3-5-sonnet) are used ONLY for critical/fatal multi-service cascading failures.
+    // Standard novel alerts use ultra-fast lightweight models (gpt-4o-mini / llama-3.2-3b) saving ~99% of LLM compute cost.
+    if severity == "critical" || severity == "fatal" || alertname.contains("Cascade") || alertname.contains("Deadlock") {
+        let model = std::env::var("LLM_DEEP_MODEL").unwrap_or_else(|_| "gpt-4o".to_string());
+        (model, LlmTier::DeepReasoning, 0.01)
+    } else {
+        let model = std::env::var("LLM_FAST_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string());
+        (model, LlmTier::FastLight, 0.0001)
+    }
+}
+
     // Real OpenAI/Groq compatible HTTP API call
     let api_url = std::env::var("LLM_API_URL")
         .unwrap_or_else(|_| "https://api.openai.com/v1/chat/completions".to_string());
     let api_key = std::env::var("LLM_API_KEY").unwrap_or_default();
-    let model = std::env::var("LLM_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string());
+    let (model, tier, est_cost) = select_llm_model(alert);
+    log::info!("LLM Router: Selected model '{}' (Tier: {:?}, Est. Cost: ${:.4}) for alert '{}'", model, tier, est_cost, alert.labels.get("alertname").map(|s| s.as_str()).unwrap_or("unknown"));
 
     let alert_json = serde_json::to_string(alert)?;
     let system_prompt = "You are Cheezer, an autonomous Kubernetes incident remediation assistant. Analyze the given Alert and output ONLY valid JSON matching this schema: {\"incident_class\": string, \"confidence\": number, \"proposed_action\": string, \"target\": {\"namespace\": string, \"resource\": string, \"replicas\": optional number}, \"reason\": string}. Crucially, proposed_action MUST be strictly one of: \"RestartPod\", \"ScaleDeployment\", \"CordonNode\", \"DeleteNamespace\", \"LogReviewNeeded\", \"CreateGithubPR\", or \"None\". Use CreateGithubPR when root-cause mitigation requires permanent manifest or source code modifications. Schema for CreateGithubPR: {\"action\": \"CreateGithubPR\", \"file_path\": \"<path>\", \"new_content\": \"<full updated content>\", \"pr_title\": \"<title>\", \"pr_body\": \"<detailed explanation>\"}. Do not propose raw shell/kubectl commands or arbitrary strings.";

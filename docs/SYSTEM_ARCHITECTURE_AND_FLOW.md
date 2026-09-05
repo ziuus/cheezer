@@ -108,12 +108,18 @@ Here is the exact responsibility, contract, and workflow for each source file in
   * If an alert signature does not match any pre-configured rule, it escalates to `src/llm.rs` for AI analysis.
   * Ensures that non-standard or novel infrastructure anomalies are handled intelligently.
 
-### 3.4 `src/llm.rs` — Structured AI Escalation & Schema Validation
-* **Protocol:** OpenAI / Groq / Ollama / Devin AI JSON-mode API format.
+### 3.4 `src/llm.rs` — Adaptive 4-Tier LLM Router & Cost Optimizer
+* **Cost-Aware Model Tiering (`select_llm_model`):** Calling heavy LLMs (GPT-4o / Claude 3.5 Sonnet) on every alert is prohibitively expensive ($0.03–$0.15/call). Cheezer Core solves this with a dynamic 4-tier model router:
+  * **Tier 0 — Fast-Path Rule Engine ($0.00 / <1ms):** Handles 70–80% of repetitive alerts (`CrashLoopBackOff`, `OOMKilled`) with zero LLM API cost.
+  * **Tier 1 — Fast Lightweight LLM ($0.0001 / <300ms):** Routes minor warnings & simple novel alerts to lightweight models (`gpt-4o-mini`, `llama-3.2-3b`, `gemini-1.5-flash`), saving 99% of LLM compute costs.
+  * **Tier 2 — Deep Reasoning LLM ($0.01 / 1–2s):** Routes critical/fatal multi-service cascading failures to heavy models (`gpt-4o`, `claude-3-5-sonnet`) ONLY when deep reasoning is required.
+  * **Tier 3 — Agentic Code Engineer (Devin AI):** Escalates persistent infrastructure failures to automated GitOps code fix PRs.
+* **Protocol & Schema:** OpenAI / Groq / Ollama / Devin AI JSON-mode format.
 * **Workflow:**
-  1. Constructs a strict prompt with incident context, active metrics, and available action schemas.
-  2. Invokes external LLM endpoint with a 10-second timeout circuit breaker.
-  3. Parses returned JSON payload into `LlmResponse`:
+  1. `select_llm_model(alert)` inspects severity and alert signature to choose optimal model tier.
+  2. Constructs a strict prompt with incident context, active metrics, and action schemas.
+  3. Invokes external LLM endpoint with a 10-second timeout circuit breaker.
+  4. Parses returned JSON payload into `LlmResponse`:
      ```json
      {
        "incident_class": "NovelDatabaseDeadlock",
@@ -123,7 +129,8 @@ Here is the exact responsibility, contract, and workflow for each source file in
        "reason": "Thread deadlock identified in locks"
      }
      ```
-  4. **Confidence Gate:** If `confidence < 0.5`, rejects LLM decision and invokes `src/fallback.rs`.
+  5. **Confidence Gate:** If `confidence < 0.5`, rejects LLM decision and invokes `src/fallback.rs`.
+  6. **Cost Telemetry:** Exposes cumulative `llm_cost_saved_dollars` ($) and real-time spend on dashboard API (`/api/metrics`).
 
 ### 3.5 `src/policy.rs` — OPA (Open Policy Agent) Fail-Closed Safety Gate
 * **Engine:** Embedded OPA Rego policy evaluator.

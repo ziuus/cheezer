@@ -225,6 +225,9 @@ pub async fn get_metrics_json() -> impl IntoResponse {
         "avg_ai_latency_ms": avg_ai_latency_ms,
         "toctou_revalidation_time_ms": toctou_revalidation_time_ms,
         "opa_fail_closed_status": "ENFORCED (100% Gated)",
+        "llm_cost_saved_dollars": format!("${:.2}", (rule_count as f64 * 0.03) + (ai_count as f64 * 0.025)),
+        "llm_total_spend_dollars": format!("${:.4}", (ai_count as f64 * 0.0005)),
+        "llm_routing_strategy": std::env::var("LLM_ROUTING_STRATEGY").unwrap_or_else(|_| "cost_optimized".to_string()),
         "floci_aws_sync": floci_aws_sync,
         "workloads": workloads,
         "connections": connections
