@@ -160,11 +160,24 @@ pub async fn get_metrics_json() -> impl IntoResponse {
     let mut connections = vec![];
     let conn_services = vec![
         ("GitHub Auth API", "github", "https://api.github.com", "OAuth / Personal Access Token"),
-        ("Vercel Platform API", "vercel", "https://api.vercel.com", "Bearer Token"),
-        ("Render PaaS API", "render", "https://api.render.com", "Bearer Token"),
+        ("Vercel Platform API", "vercel", "https://api.vercel.com", "Serverless Web PaaS"),
+        ("Render PaaS API", "render", "https://api.render.com", "Git-based Application PaaS"),
         ("Kubernetes API Server", "k8s", "https://kubernetes.default.svc", "In-Cluster ServiceAccount Token"),
-        ("Devin AI Autonomous Agent API", "devin", "https://api.devin.ai", "Bearer Token"),
-        ("Grafana / OpenTelemetry Collector", "grafana", "http://127.0.0.1:9090", "Bearer / API Key"),
+        ("AWS Lambda & App Runner", "lambda", "https://lambda.us-east-1.amazonaws.com", "Serverless & Managed Containers"),
+        ("Google Cloud Run & Functions", "cloudrun", "https://run.googleapis.com", "Stateless Serverless Containers"),
+        ("Azure Functions & ACI", "azure", "https://management.azure.com", "Serverless & On-Demand Containers"),
+        ("Fly.io Platform Gateway", "flyio", "https://api.fly.io", "Git-based PaaS & Edge Containers"),
+        ("Railway.app Platform", "railway", "https://backboard.railway.app", "Developer-Friendly Git PaaS"),
+        ("Heroku Platform API", "heroku", "https://api.heroku.com", "PaaS Dyno Management"),
+        ("Netlify Platform API", "netlify", "https://api.netlify.com", "Git-based Web & Functions"),
+        ("Platform.sh GitOps PaaS", "platformsh", "https://api.platform.sh", "GitOps Containerized PaaS"),
+        ("Docker Engine & Compose", "docker", "https://localhost:2375", "Single-Host Container Runtime"),
+        ("Podman + systemd Service", "podman", "https://localhost:8888", "Daemonless OS-Init Containers"),
+        ("Portainer / Ansible Gateway", "portainer", "https://localhost:9443", "Host Scripts & Container Manager"),
+        ("Docker Swarm Manager", "swarm", "https://localhost:2377", "Lightweight Container Cluster"),
+        ("HashiCorp Nomad Engine", "nomad", "http://localhost:4646", "Workload & Task Orchestrator"),
+        ("Devin AI Autonomous Agent API", "devin", "https://api.devin.ai", "Autonomous AI Code Fixes"),
+        ("Grafana / OpenTelemetry Collector", "grafana", "http://127.0.0.1:9090", "Telemetry & Webhooks"),
     ];
 
     for (name, service_id, default_ep, auth_type) in conn_services {
