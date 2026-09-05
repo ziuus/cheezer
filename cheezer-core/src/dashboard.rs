@@ -1036,6 +1036,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         <i data-lucide="check" class="w-4 h-4"></i>
                         <span>Start Watching</span>
                     </button>
+                </div>
             </div>
         </div>
 
