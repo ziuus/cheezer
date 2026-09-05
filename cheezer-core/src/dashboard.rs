@@ -60,24 +60,19 @@ pub async fn get_incidents_json() -> impl IntoResponse {
 pub async fn get_logs_json() -> impl IntoResponse {
     let incidents = store::get_incidents().unwrap_or_default();
     let mut logs = Vec::new();
+    let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     logs.push(json!({
-        "timestamp": "2026-09-05 15:00:00",
+        "timestamp": now,
         "level": "INFO",
         "module": "cheezer::main",
-        "message": "Control plane engine initialized. OPA fail-closed policy engine ENFORCED on http://localhost:8181."
+        "message": "Control plane engine active. OPA fail-closed policy engine ENFORCED on http://localhost:8181."
     }));
     logs.push(json!({
-        "timestamp": "2026-09-05 15:00:01",
+        "timestamp": now,
         "level": "INFO",
         "module": "ingest::webhook",
         "message": "Grafana / Prometheus Alertmanager webhook listener active on 0.0.0.0:9090/api/grafana_webhook."
-    }));
-    logs.push(json!({
-        "timestamp": "2026-09-05 15:00:02",
-        "level": "INFO",
-        "module": "watchdog::telemetry",
-        "message": "Monitored workloads process telemetry streaming active across K8s, Vercel, AWS, and Cloud Run."
     }));
 
     for inc in incidents.iter().take(60) {
@@ -629,6 +624,10 @@ pub async fn get_settings_json() -> impl IntoResponse {
     let opa_url = std::env::var("OPA_URL").unwrap_or_else(|_| "http://localhost:8181/v1/data/cheezer/authz/allow".to_string());
     let webhook_url = std::env::var("NOTIFICATION_WEBHOOK_URL").unwrap_or_else(|_| "http://172.18.100.41:4566/000000000000/cheezer-alerts".to_string());
     let api_key = std::env::var("CHEEZER_API_KEY").unwrap_or_else(|_| "hackathon2026".to_string());
+    let devin_key = std::env::var("DEVIN_API_KEY").ok().or_else(|| store::get_credential("devin").ok().flatten().map(|(t, _, _)| t)).unwrap_or_default();
+    let github_token = std::env::var("GITHUB_TOKEN").ok().or_else(|| store::get_credential("github").ok().flatten().map(|(t, _, _)| t)).unwrap_or_default();
+    let vercel_token = std::env::var("VERCEL_TOKEN").ok().or_else(|| store::get_credential("vercel").ok().flatten().map(|(t, _, _)| t)).unwrap_or_default();
+    let render_token = std::env::var("RENDER_TOKEN").ok().or_else(|| store::get_credential("render").ok().flatten().map(|(t, _, _)| t)).unwrap_or_default();
 
     Json(json!({
         "llm_model": model,
@@ -636,6 +635,10 @@ pub async fn get_settings_json() -> impl IntoResponse {
         "opa_url": opa_url,
         "notification_webhook_url": webhook_url,
         "api_key": api_key,
+        "devin_api_key": devin_key,
+        "github_token": github_token,
+        "vercel_token": vercel_token,
+        "render_token": render_token,
         "toctou_revalidation_enabled": true,
         "remediation_guard_window_seconds": 600,
         "remediation_guard_max_actions": 3
@@ -647,22 +650,50 @@ pub struct UpdateSettingsRequest {
     pub llm_model: Option<String>,
     pub opa_url: Option<String>,
     pub notification_webhook_url: Option<String>,
+    pub devin_api_key: Option<String>,
+    pub github_token: Option<String>,
+    pub vercel_token: Option<String>,
+    pub render_token: Option<String>,
 }
 
 pub async fn update_settings_json(
     Json(req): Json<UpdateSettingsRequest>
 ) -> impl IntoResponse {
     if let Some(m) = req.llm_model {
-        std::env::set_var("LLM_MODEL", m);
+        if !m.trim().is_empty() { std::env::set_var("LLM_MODEL", m.trim()); }
     }
     if let Some(o) = req.opa_url {
-        std::env::set_var("OPA_URL", o);
+        if !o.trim().is_empty() { std::env::set_var("OPA_URL", o.trim()); }
     }
     if let Some(w) = req.notification_webhook_url {
-        std::env::set_var("NOTIFICATION_WEBHOOK_URL", w);
+        if !w.trim().is_empty() { std::env::set_var("NOTIFICATION_WEBHOOK_URL", w.trim()); }
     }
-    log::info!("Settings updated via Web Dashboard");
-    Json(json!({ "status": "updated" }))
+    if let Some(dk) = req.devin_api_key {
+        if !dk.trim().is_empty() {
+            std::env::set_var("DEVIN_API_KEY", dk.trim());
+            let _ = store::save_credential("devin", dk.trim(), "", "AUTHENTICATED");
+        }
+    }
+    if let Some(gt) = req.github_token {
+        if !gt.trim().is_empty() {
+            std::env::set_var("GITHUB_TOKEN", gt.trim());
+            let _ = store::save_credential("github", gt.trim(), "", "AUTHENTICATED");
+        }
+    }
+    if let Some(vt) = req.vercel_token {
+        if !vt.trim().is_empty() {
+            std::env::set_var("VERCEL_TOKEN", vt.trim());
+            let _ = store::save_credential("vercel", vt.trim(), "", "AUTHENTICATED");
+        }
+    }
+    if let Some(rt) = req.render_token {
+        if !rt.trim().is_empty() {
+            std::env::set_var("RENDER_TOKEN", rt.trim());
+            let _ = store::save_credential("render", rt.trim(), "", "AUTHENTICATED");
+        }
+    }
+    log::info!("Global Settings updated via Control Plane Dashboard");
+    Json(json!({ "status": "updated", "message": "All global configurations and API tokens updated successfully!" }))
 }
 
 pub async fn get_history_json() -> impl IntoResponse {
@@ -1269,6 +1300,35 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
                 <form onsubmit="saveSettings(event)" class="space-y-5">
                     <div>
+                        <label class="block text-xs font-mono text-purple-400 font-bold uppercase mb-1 flex items-center gap-1.5">
+                            <i data-lucide="bot" class="w-3.5 h-3.5"></i> Devin AI Autonomous Engineer API Key
+                        </label>
+                        <input type="password" id="setting-devin-key" placeholder="Paste your Devin API Token (from app.devin.ai/settings)..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-mono text-amber-400 font-bold uppercase mb-1 flex items-center gap-1.5">
+                            <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub Personal Access Token (PAT)
+                        </label>
+                        <input type="password" id="setting-github-token" placeholder="Paste GitHub PAT (repo, workflow scope)..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-mono text-sky-400 font-bold uppercase mb-1 flex items-center gap-1.5">
+                                <i data-lucide="globe" class="w-3.5 h-3.5"></i> Vercel Platform Token
+                            </label>
+                            <input type="password" id="setting-vercel-token" placeholder="Paste Vercel API Token..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-mono text-emerald-400 font-bold uppercase mb-1 flex items-center gap-1.5">
+                                <i data-lucide="layers" class="w-3.5 h-3.5"></i> Render API Token
+                            </label>
+                            <input type="password" id="setting-render-token" placeholder="Paste Render API Token..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-800/80">
                         <label class="block text-xs font-mono text-slate-300 uppercase mb-1">NVIDIA NIM LLM Model String</label>
                         <input type="text" id="setting-llm-model" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
                     </div>
@@ -1286,7 +1346,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                     <div class="pt-4 flex justify-end">
                         <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-lg shadow-amber-500/20 flex items-center gap-2">
                             <i data-lucide="save" class="w-4 h-4"></i>
-                            <span>Save Configuration</span>
+                            <span>Save Global Configuration</span>
                         </button>
                     </div>
                 </form>
@@ -1712,9 +1772,13 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             try {
                 const res = await fetch('/api/settings');
                 const data = await res.json();
-                document.getElementById('setting-llm-model').value = data.llm_model;
-                document.getElementById('setting-opa-url').value = data.opa_url;
-                document.getElementById('setting-webhook-url').value = data.notification_webhook_url;
+                if (data.llm_model) document.getElementById('setting-llm-model').value = data.llm_model;
+                if (data.opa_url) document.getElementById('setting-opa-url').value = data.opa_url;
+                if (data.notification_webhook_url) document.getElementById('setting-webhook-url').value = data.notification_webhook_url;
+                if (data.devin_api_key) document.getElementById('setting-devin-key').value = data.devin_api_key;
+                if (data.github_token) document.getElementById('setting-github-token').value = data.github_token;
+                if (data.vercel_token) document.getElementById('setting-vercel-token').value = data.vercel_token;
+                if (data.render_token) document.getElementById('setting-render-token').value = data.render_token;
             } catch (err) {
                 console.error("Failed to fetch settings:", err);
             }
@@ -1725,18 +1789,33 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             const llm_model = document.getElementById('setting-llm-model').value;
             const opa_url = document.getElementById('setting-opa-url').value;
             const notification_webhook_url = document.getElementById('setting-webhook-url').value;
+            const devin_api_key = document.getElementById('setting-devin-key').value;
+            const github_token = document.getElementById('setting-github-token').value;
+            const vercel_token = document.getElementById('setting-vercel-token').value;
+            const render_token = document.getElementById('setting-render-token').value;
 
             try {
                 const res = await fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ llm_model, opa_url, notification_webhook_url })
+                    body: JSON.stringify({ 
+                        llm_model, 
+                        opa_url, 
+                        notification_webhook_url,
+                        devin_api_key,
+                        github_token,
+                        vercel_token,
+                        render_token
+                    })
                 });
+                const data = await res.json();
                 if (res.ok) {
-                    alert("✅ Settings saved successfully!");
+                    alert('✅ ' + (data.message || 'Global settings saved successfully!'));
+                } else {
+                    alert('❌ Error saving settings: ' + JSON.stringify(data));
                 }
             } catch (err) {
-                alert(`Error saving settings: ${err}`);
+                alert('Error saving settings: ' + err);
             }
         }
 
