@@ -2163,7 +2163,8 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         async function viewIncidentDoc(id) {
             try {
                 const res = await fetch('/api/incidents');
-                const list = await res.json();
+                const data = await res.json();
+                const list = Array.isArray(data) ? data : (data.incidents || []);
                 const inc = list.find(i => i.id === id);
                 if (!inc) return alert("Incident record not found");
 
