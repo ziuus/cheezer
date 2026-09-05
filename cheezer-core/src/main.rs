@@ -11,6 +11,7 @@ mod state;
 mod store;
 mod triage;
 mod watchdog;
+mod devin;
 
 
 

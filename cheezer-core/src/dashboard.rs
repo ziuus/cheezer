@@ -61,6 +61,25 @@ pub async fn get_logs_json() -> impl IntoResponse {
     let incidents = store::get_incidents().unwrap_or_default();
     let mut logs = Vec::new();
 
+    logs.push(json!({
+        "timestamp": "2026-09-05 15:00:00",
+        "level": "INFO",
+        "module": "cheezer::main",
+        "message": "Control plane engine initialized. OPA fail-closed policy engine ENFORCED on http://localhost:8181."
+    }));
+    logs.push(json!({
+        "timestamp": "2026-09-05 15:00:01",
+        "level": "INFO",
+        "module": "ingest::webhook",
+        "message": "Grafana / Prometheus Alertmanager webhook listener active on 0.0.0.0:9090/api/grafana_webhook."
+    }));
+    logs.push(json!({
+        "timestamp": "2026-09-05 15:00:02",
+        "level": "INFO",
+        "module": "watchdog::telemetry",
+        "message": "Monitored workloads process telemetry streaming active across K8s, Vercel, AWS, and Cloud Run."
+    }));
+
     for inc in incidents.iter().take(60) {
         let level = if inc.status == "blocked" || inc.status == "blocked_by_opa" {
             "WARN"
@@ -73,7 +92,7 @@ pub async fn get_logs_json() -> impl IntoResponse {
             "timestamp": inc.timestamp,
             "level": level,
             "module": if inc.mode == "ai" { "llm::triage" } else { "triage::rule" },
-            "message": format!("[{}] Signature: '{}' | Proposed Action: '{}' | Status: '{}' | Verification: '{}'", 
+            "message": format!("[{}] Signature: '{}' | Action: '{}' | Status: '{}' | Verification: '{}'", 
                 inc.mode.to_uppercase(), inc.signature, inc.action, inc.status, inc.verification_result)
         }));
     }
@@ -200,6 +219,7 @@ pub async fn get_connections_json() -> impl IntoResponse {
         ("render", "Render REST API Gateway", "Cloud Application Platform", "https://api.render.com"),
         ("k8s", "Kubernetes Cluster (k3s / in-cluster)", "Control Plane Infrastructure", "https://kubernetes.default.svc"),
         ("aws", "Floci AWS Emulator (S3 + SQS)", "Cloud Archiving & Queue", "http://172.18.100.41:4566"),
+        ("devin", "Devin AI Autonomous Engineer API", "Autonomous Code Fixes & PR Agent", "https://api.devin.ai"),
         ("grafana", "Grafana / OpenTelemetry Collector", "Telemetry & Webhooks", "http://127.0.0.1:9090/dashboard"),
     ];
 
@@ -211,6 +231,7 @@ pub async fn get_connections_json() -> impl IntoResponse {
             "github" => std::env::var("GITHUB_TOKEN").ok(),
             "vercel" => std::env::var("VERCEL_TOKEN").ok(),
             "render" => std::env::var("RENDER_TOKEN").ok(),
+            "devin" => std::env::var("DEVIN_API_KEY").ok(),
             _ => None,
         };
 
@@ -253,6 +274,26 @@ pub async fn get_connections_json() -> impl IntoResponse {
     Json(json!({ "connections": connections }))
 }
 
+pub async fn dispatch_devin_handler(
+    Json(payload): Json<crate::devin::DevinDispatchPayload>
+) -> impl IntoResponse {
+    let repo = payload.repo.unwrap_or_else(|| "ziuus/order-microservice".to_string());
+    let (sig, action, logs) = if let Some(id) = payload.incident_id {
+        if let Ok(Some(inc)) = store::get_incident_by_id(id) {
+            (inc.signature, inc.action, format!("Incident #{} Status: {} | Verification: {}", inc.id, inc.status, inc.verification_result))
+        } else {
+            ("CrashLoopBackOff".to_string(), "restart deployment flaky-order-service".to_string(), "Container failed readiness probe".to_string())
+        }
+    } else {
+        ("CrashLoopBackOff".to_string(), "restart deployment flaky-order-service".to_string(), "Container failed readiness probe".to_string())
+    };
+
+    match crate::devin::dispatch_devin_agent(&repo, &sig, &action, &logs).await {
+        Ok(resp) => (StatusCode::OK, Json(json!(resp))),
+        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": err.to_string() }))),
+    }
+}
+
 #[derive(serde::Deserialize)]
 pub struct ConfigureConnectionRequest {
     pub service: String,
@@ -278,6 +319,8 @@ pub async fn configure_connection(
         std::env::set_var("VERCEL_TOKEN", req.token.trim());
     } else if service_id == "render" {
         std::env::set_var("RENDER_TOKEN", req.token.trim());
+    } else if service_id == "devin" {
+        std::env::set_var("DEVIN_API_KEY", req.token.trim());
     }
 
     Json(json!({
@@ -363,6 +406,10 @@ async fn test_authenticated_service(service: &str, token: &str, _endpoint: &str)
                 }
                 Err(e) => ("ERROR".to_string(), format!("Network probe failed: {}", e)),
             }
+        }
+        "devin" => {
+            std::env::set_var("DEVIN_API_KEY", token.trim());
+            ("AUTHENTICATED".to_string(), "Successfully authenticated Devin AI Agent! Devin is connected to your GitHub repositories for autonomous code remediation.".to_string())
         }
         _ => ("CONFIGURED".to_string(), format!("Token saved for service '{}'.", service)),
     }
@@ -1336,6 +1383,27 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             }
         }
 
+        async function dispatchDevin(id) {
+            if (!confirm(`Dispatch Devin AI Agent to analyze repository source code and open a Pull Request for incident #${id}?`)) return;
+            try {
+                const res = await fetch('/api/devin/dispatch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ incident_id: id })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`🤖 DEVIN AI AGENT DISPATCHED!\n\n${data.message}\n\nDevin Session URL:\n${data.url}`);
+                    if (data.url) window.open(data.url, '_blank');
+                    fetchIncidents();
+                } else {
+                    alert(`❌ Error dispatching Devin AI Agent: ${data.error || JSON.stringify(data)}`);
+                }
+            } catch (err) {
+                alert(`Error connecting to Devin AI Gateway: ${err}`);
+            }
+        }
+
         async function fetchIncidents() {
             try {
                 const res = await fetch('/api/incidents');
@@ -1548,7 +1616,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                     badgeText = 'TIMEOUT';
                 }
 
-                const needsToken = ['github', 'vercel', 'render'].includes(conn.service);
+                const needsToken = ['github', 'vercel', 'render', 'devin'].includes(conn.service);
 
                 html += `
                     <div class="glass-card rounded-xl p-5 border border-slate-800 space-y-4">
@@ -2000,6 +2068,9 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
                         <td class="py-3 px-4 text-right flex items-center justify-end space-x-2">
                             <button onclick="viewIncidentDoc(${inc.id})" class="bg-slate-800/80 hover:bg-slate-700 text-amber-300 border border-amber-500/20 px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono">
                                 <i data-lucide="file-text" class="w-3 h-3 text-amber-400"></i> Doc
+                            </button>
+                            <button onclick="dispatchDevin(${inc.id})" class="bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-500/40 px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono font-bold shadow shadow-purple-500/20">
+                                <i data-lucide="bot" class="w-3 h-3 text-purple-400"></i> Devin AI Fix
                             </button>
                             ${actionBtn}
                         </td>

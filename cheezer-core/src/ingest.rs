@@ -50,6 +50,7 @@ pub fn create_router() -> Router {
         .route("/api/settings", get(dashboard::get_settings_json))
         .route("/api/settings", post(dashboard::update_settings_json))
         .route("/api/history", get(dashboard::get_history_json))
+        .route("/api/devin/dispatch", post(dashboard::dispatch_devin_handler))
         .route("/api/system/status", get(get_system_status))
         .route("/api/system/toggle", post(toggle_system_status))
 }
