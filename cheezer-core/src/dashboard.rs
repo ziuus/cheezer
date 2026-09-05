@@ -842,12 +842,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #080c14; }
         code, .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .tab-active { background-color: #E8F0FE; color: #1A73E8; border-color: transparent; }
-        .bg-surface { background: #ffffff; border: 1px solid #DADCE0; box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15); }
-        .text-google-primary { color: #202124; }
-        .text-google-secondary { color: #5F6368; }
-        .google-header { background-color: #FFFFFF; border-bottom: 1px solid #DADCE0; }
-
+                                        
     </style>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -861,10 +856,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1; }
         
         /* Material 3 Tabs */
-        .tab-active { background-color: #C2E7FF; color: #001D35; font-weight: 500; border-radius: 9999px; }
-        .tab-inactive { color: #444746; font-weight: 500; border-radius: 9999px; }
-        .tab-inactive:hover { background-color: #1F1F1F14; }
-        
+                                
         /* Material 3 Card */
         .m3-card { background-color: #FFFFFF; border: 1px solid #C7C7C7; border-radius: 12px; }
         
@@ -912,7 +904,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         </header>
 
         <!-- Navigation Tab Bar -->
-        <nav class="flex flex-wrap items-center space-x-2 my-6 border-b border-[#DADCE0]/80 pb-3 gap-y-2">
+        <nav class="flex flex-wrap items-center space-x-2 my-6 border-b border-[#DADCE0] pb-2 gap-y-2">
             <a id="tab-btn-incidents" href="/incidents" onclick="switchTab('incidents'); return false;" class="__TAB_BTN_CLASS_INCIDENTS__">
                 <span class="material-symbols-outlined  ">gpp_maybe</span>
                 <span>Live Incidents & Circuit Breakers</span>
@@ -943,37 +935,37 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         <!-- PAGE 1: INCIDENTS & CIRCUIT BREAKERS -->
         <div id="tab-content-incidents" class="__TAB_CONTENT_CLASS_INCIDENTS__">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpi-grid">
-                <div class=" rounded-lg p-5 ">
+                <div class="bg-white border border-[#DADCE0] rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                     <div class="flex items-center justify-between text-xs font-medium text-[#444746] uppercase tracking-wider">
                         <span>Total Incidents</span>
                         <span class="material-symbols-outlined   text-[#80868B]">layers</span>
                     </div>
-                    <div class="text-3xl font-extrabold text-[#1F1F1F] mt-2 font-mono" id="kpi-total">0</div>
+                    <div class="text-4xl font-medium text-[#1F1F1F] mt-3" id="kpi-total">0</div>
                 </div>
-                <div class=" rounded-lg p-5 ">
+                <div class="bg-white border border-[#DADCE0] rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                     <div class="flex items-center justify-between text-xs font-medium text-[#444746] uppercase tracking-wider">
                         <span>Self-Remediated</span>
                         <span class="material-symbols-outlined   text-[#1E8E3E]">check_circle</span>
                     </div>
-                    <div class="text-3xl font-extrabold text-[#1E8E3E] mt-2 font-mono" id="kpi-executed">0</div>
+                    <div class="text-4xl font-medium text-[#1E8E3E] mt-3" id="kpi-executed">0</div>
                 </div>
-                <div class="bg-white border-[#DADCE0] rounded-lg p-5 ">
+                <div class="bg-white border border-[#DADCE0] rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                     <div class="flex items-center justify-between text-sm font-medium text-[#1F1F1F]">
                         <span>Requires Approval</span>
                         <span class="material-symbols-outlined   text-[#0B57D0] animate-pulse">warning</span>
                     </div>
-                    <div class="text-3xl font-extrabold text-[#0B57D0] mt-2 font-mono" id="kpi-approval">0</div>
+                    <div class="text-4xl font-medium text-[#0B57D0] mt-3" id="kpi-approval">0</div>
                 </div>
-                <div class=" rounded-lg p-5 ">
+                <div class="bg-white border border-[#DADCE0] rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                     <div class="flex items-center justify-between text-xs font-medium text-[#444746] uppercase tracking-wider">
                         <span>OPA Denials / Blocked</span>
                         <span class="material-symbols-outlined   text-[#D93025]">gpp_bad</span>
                     </div>
-                    <div class="text-3xl font-extrabold text-[#D93025] mt-2 font-mono" id="kpi-blocked">0</div>
+                    <div class="text-4xl font-medium text-[#D93025] mt-3" id="kpi-blocked">0</div>
                 </div>
             </div>
 
-            <section class=" rounded-lg p-6 shadow-xl">
+            <section class="bg-white border border-[#DADCE0] rounded-2xl p-6 shadow-sm">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
                         <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
@@ -991,7 +983,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="text-[11px] font-mono uppercase tracking-wider text-[#444746] border-b border-[#DADCE0] bg-[#F3F6FC]/60">
+                            <tr class="text-xs font-medium text-[#444746] border-b border-[#DADCE0] bg-[#F8F9FA]">
                                 <th class="py-3 px-4">ID</th>
                                 <th class="py-3 px-4">Timestamp</th>
                                 <th class="py-3 px-4">Signature / Alert</th>
@@ -1015,7 +1007,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         <!-- PAGE 2: CONNECTIONS MANAGER & WATCHER ENGINE -->
         <div id="tab-content-connections" class="__TAB_CONTENT_CLASS_CONNECTIONS__">
             <!-- Section 1: Gateways & Connections -->
-            <section class=" rounded-lg p-6 shadow-xl">
+            <section class="bg-white border border-[#DADCE0] rounded-2xl p-6 shadow-sm">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
                         <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
@@ -1036,7 +1028,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             </section>
 
             <!-- Section 2: Monitored Workloads & Watchers -->
-            <section class=" rounded-lg p-6 shadow-xl">
+            <section class="bg-white border border-[#DADCE0] rounded-2xl p-6 shadow-sm">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
                         <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
@@ -1198,7 +1190,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             </div>
 
             <!-- Monitored Workloads Process Telemetry -->
-            <section class=" rounded-lg p-6 shadow-xl">
+            <section class="bg-white border border-[#DADCE0] rounded-2xl p-6 shadow-sm">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
                         <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
@@ -1219,7 +1211,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             </section>
 
             <!-- Connection Telemetry & Response Matrix -->
-            <section class=" rounded-lg p-6 shadow-xl">
+            <section class="bg-white border border-[#DADCE0] rounded-2xl p-6 shadow-sm">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
                         <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
@@ -1237,25 +1229,25 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             </section>
 
             <!-- Benchmarks -->
-            <section class=" rounded-lg p-6 shadow-xl">
+            <section class="bg-white border border-[#DADCE0] rounded-2xl p-6 shadow-sm">
                 <h3 class="text-base font-bold text-[#1F1F1F] mb-4 pb-3 border-b border-[#DADCE0]/80 flex items-center gap-2">
                     <span class="material-symbols-outlined   text-[#0B57D0]">memory</span>
                     Engine Latency & Cloud Synchronization Benchmarks
                 </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
+                    <div class="bg-[#F8F9FA] border border-[#DADCE0] p-4 rounded-2xl">
                         <div class="text-[11px] text-[#444746] font-mono uppercase">Rule Fast-Path Latency</div>
                         <div class="text-xl font-bold text-[#0B57D0] mt-1 font-mono" id="metric-rule-latency">< 50ms</div>
                     </div>
-                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
+                    <div class="bg-[#F8F9FA] border border-[#DADCE0] p-4 rounded-2xl">
                         <div class="text-[11px] text-[#444746] font-mono uppercase">NVIDIA NIM LLM Latency</div>
                         <div class="text-xl font-bold text-[#9333EA] mt-1 font-mono" id="metric-ai-latency">1.2s</div>
                     </div>
-                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
+                    <div class="bg-[#F8F9FA] border border-[#DADCE0] p-4 rounded-2xl">
                         <div class="text-[11px] text-[#444746] font-mono uppercase">TOCTOU Revalidation Time</div>
                         <div class="text-xl font-bold text-[#1E8E3E] mt-1 font-mono" id="metric-toctou-latency">12ms</div>
                     </div>
-                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
+                    <div class="bg-[#F8F9FA] border border-[#DADCE0] p-4 rounded-2xl">
                         <div class="text-[11px] text-[#444746] font-mono uppercase">Floci AWS Cloud Sync</div>
                         <div class="text-xs font-bold text-[#0B57D0] mt-2 truncate font-mono" id="metric-floci-sync">Connected (http://172.18.100.41:4566)</div>
                     </div>
@@ -1265,7 +1257,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
 
         <!-- PAGE 4: REAL-TIME LOG MONITOR -->
         <div id="tab-content-logs" class="__TAB_CONTENT_CLASS_LOGS__">
-            <section class=" rounded-lg p-6 shadow-xl">
+            <section class="bg-white border border-[#DADCE0] rounded-2xl p-6 shadow-sm">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 mb-4 border-b border-[#DADCE0]/80 gap-4">
                     <div>
                         <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
@@ -1294,7 +1286,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
 
         <!-- PAGE 5: AUDIT HISTORY -->
         <div id="tab-content-history" class="__TAB_CONTENT_CLASS_HISTORY__">
-            <section class=" rounded-lg p-6 shadow-xl">
+            <section class="bg-white border border-[#DADCE0] rounded-2xl p-6 shadow-sm">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
                         <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
@@ -1312,7 +1304,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="text-[11px] font-mono uppercase tracking-wider text-[#444746] border-b border-[#DADCE0] bg-[#F3F6FC]/60">
+                            <tr class="text-xs font-medium text-[#444746] border-b border-[#DADCE0] bg-[#F8F9FA]">
                                 <th class="py-3 px-4">ID</th>
                                 <th class="py-3 px-4">Timestamp</th>
                                 <th class="py-3 px-4">Alert Signature</th>
@@ -1422,13 +1414,13 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 const content = document.getElementById(`tab-content-${t}`);
                 const btn = document.getElementById(`tab-btn-${t}`);
                 if (content) content.classList.add('hidden');
-                if (btn) btn.className = "px-4 py-2 rounded-lg text-xs font-semibold transition text-[#444746] hover:text-[#1F1F1F] hover:bg-white/60 border border-transparent flex items-center space-x-2";
+                if (btn) btn.className = "px-5 py-2.5 rounded-full text-sm font-medium transition text-[#444746] hover:bg-[#F3F6FC] hover:text-[#1F1F1F] flex items-center space-x-2";
             });
 
             const activeContent = document.getElementById(`tab-content-${tab}`);
             const activeBtn = document.getElementById(`tab-btn-${tab}`);
             if (activeContent) activeContent.classList.remove('hidden');
-            if (activeBtn) activeBtn.className = "tab-active px-5 py-2 flex items-center space-x-2";
+            if (activeBtn) activeBtn.className = "bg-[#C2E7FF] text-[#001D35] px-5 py-2.5 rounded-full text-sm font-medium flex items-center space-x-2";
 
             if (tab === 'incidents') fetchIncidents();
             if (tab === 'logs') fetchLogs();
