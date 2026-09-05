@@ -20,8 +20,6 @@ data:
         send_resolved: false
         http_config:
           bearer_token: 'hackathon2026'
-        headers:
-          x-api-key: 'hackathon2026'
 ---
 apiVersion: apps/v1
 kind: Deployment

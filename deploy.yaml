@@ -91,4 +91,20 @@ spec:
           value: ""
         - name: GITHUB_REPO
           value: "ziuus/cheezer"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cheezer-core
+  namespace: demo
+spec:
+  selector:
+    app: cheezer-core
+  ports:
+    - port: 9090
+      targetPort: 9090
+      name: http
+    - port: 9000
+      targetPort: 9000
+      name: watchdog
 
