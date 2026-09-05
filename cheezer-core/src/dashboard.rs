@@ -1596,6 +1596,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         function renderConnections(list) {
             const container = document.getElementById('connections-list');
+            if (!container) return;
             let html = '';
             for (const conn of list) {
                 const isAuth = conn.status === 'AUTHENTICATED';
@@ -1736,6 +1737,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         function renderHistory(list) {
             const body = document.getElementById('history-body');
+            if (!body) return;
             let html = '';
             for (const item of list) {
                 html += `
@@ -1766,6 +1768,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         function renderLogs(logs) {
             const consoleEl = document.getElementById('log-console');
+            if (!consoleEl) return;
             if (!logs || logs.length === 0) {
                 consoleEl.innerHTML = `<div class="text-slate-500 italic">No log entries recorded yet</div>`;
                 return;
