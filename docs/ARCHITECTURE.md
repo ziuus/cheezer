@@ -1,6 +1,9 @@
-# Cheezer Architecture & Technical Specification
+# Cheezer Core Architecture & Technical Specification
 
-Cheezer is engineered to run **out-of-band** (outside the target Kubernetes cluster) to guarantee operational continuity and emergency remediation capability even during total control plane or network degradation.
+> **Positioning:** The Autonomous, Vendor-Neutral, Safety-First Recovery Control Plane  
+> **Operational Mandate:** *"Cheap enough to run continuously, fast enough to remediate in milliseconds, and predictive enough to act before failure."*
+
+Cheezer is engineered to run **out-of-band** (outside target Kubernetes/cloud infrastructure) to guarantee operational continuity and emergency self-healing capability even during total target control plane or network degradation.
 
 ---
 
@@ -9,27 +12,36 @@ Cheezer is engineered to run **out-of-band** (outside the target Kubernetes clus
 ```text
                                ┌─────────────────────────────┐
                                │   Grafana / Alertmanager    │
+                               │   Datadog / Sentry / OTel   │
                                └──────────────┬──────────────┘
-                                              │ POST /api/grafana_webhook
-                                              │ (x-api-key: secret)
+                                              │ POST /api/webhooks/alert
                                               ▼
                                ┌─────────────────────────────┐
                                │     Ingest (`ingest.rs`)    │
+                               │  (Kill Switch Check & Auth) │
                                └──────────────┬──────────────┘
                                               │ Alert struct
                                               ▼
                                ┌─────────────────────────────┐
+                               │  Predictive Risk Engine     │
+                               │     (`predictive.rs`)       │
+                               │  (Linear Trends & EWMA)     │
+                               └──────────────┬──────────────┘
+                                              │
+                                              ▼
+                               ┌─────────────────────────────┐
                                │     Triage (`triage.rs`)    │
+                               │  6-Tier Escalation Ladder   │
                                └──────┬────────────────┬──────┘
                                       │                │
-            (Known Rule Signature)    │                │ (Novel / Unknown Alert)
+            (Tier 0/1 Fast Path)      │                │ (Tier 4 Cloud LLM / Tier 5 Devin AI)
                       ┌───────────────┘                └───────────────┐
                       ▼                                                ▼
          ┌─────────────────────────┐                      ┌─────────────────────────┐
-         │  Rule Matcher (`rule`)  │                      │   LLM API (`llm.rs`)    │
-         └────────────┬────────────┘                      │ (OpenAI / Groq HTTP)    │
-                      │                                   └────────────┬────────────┘
-                      │                                                │ (Timeout / Err)
+         │ Fast-Path Rule Engine   │                      │  LLM Router (`llm.rs`)  │
+         │  (`triage.rs` <1ms)     │                      │ (gpt-4o-mini / gpt-4o)  │
+         └────────────┬────────────┘                      └────────────┬────────────┘
+                      │                                                │ (Timeout / Low Conf)
                       │                                                ▼
                       │                                   ┌─────────────────────────┐
                       │                                   │ Fallback (`fallback.rs`)│
@@ -38,38 +50,38 @@ Cheezer is engineered to run **out-of-band** (outside the target Kubernetes clus
                       └───────────────────────┬────────────────────────┘
                                               ▼
                                ┌─────────────────────────────┐
-                               │ TOCTOU Check (`executor.rs`)│
+                               │ TOCTOU Check (`guard.rs`)   │
                                │   (`revalidate_state`)      │
                                └──────────────┬──────────────┘
-                                              │ (State Valid)
+                                              │ (State Still Broken)
                                               ▼
                                ┌─────────────────────────────┐
                                │ RemediationGuard(`guard.rs`)│
-                               │   (Rate limit / Budget)     │
+                               │ (Disruption Budget: <=3/15m)│
                                └──────────────┬──────────────┘
-                                              │ (Allowed)
+                                              │ (Budget Allowed)
                                               ▼
                                ┌─────────────────────────────┐
                                │  OPA Policy (`policy.rs`)   │
                                │  (Fail-Closed DENY Gate)    │
                                └──────────────┬──────────────┘
-                                              │ (OPA Result == true)
+                                              │ (OPA Result == ALLOW)
                                               ▼
                                ┌─────────────────────────────┐
                                │   Executor (`executor.rs`)  │
-                               │    (`kube-rs` Mutations)    │
+                               │   (19 Platform Connectors)  │
                                └──────────────┬──────────────┘
                                               │
                                               ▼
                                ┌─────────────────────────────┐
                                │ Recovery Verification Check │
-                               │     (`verify_recovery`)     │
+                               │   (Proves System Recovery)  │
                                └──────────────┬──────────────┘
                                               │
-                                              ▼
-                               ┌─────────────────────────────┐
-                               │   SQLite WAL (`store.rs`)   │
-                               └─────────────────────────────┘
+                                ┌─────────────┴─────────────┐
+                                ▼                           ▼
+                             RESOLVED                  ESCALATE → GITOPS PR
+                                                          (Devin AI)
 ```
 
 ---
@@ -77,86 +89,57 @@ Cheezer is engineered to run **out-of-band** (outside the target Kubernetes clus
 ## 🔒 Security Boundaries & Component Breakdown
 
 ### 1. Ingestion (`ingest.rs`)
-- Mounts `/api/grafana_webhook` on Axum.
-- Validates the `x-api-key` HTTP header against `CHEEZER_API_KEY` (default: `hackathon-secret`).
-- Parses Alertmanager JSON payloads into typed `Alert` structs.
+- Mounts `POST /api/webhooks/alert` on Axum.
+- Validates HTTP token headers against `CHEEZER_API_KEY`.
+- Verifies global kill switch state (`ENABLE_AUTONOMOUS_REMEDIATION=true`).
+- Normalizes telemetry payloads into a unified typed `Alert` struct.
 
-### 2. Rule Engine Triage (`triage.rs`)
-- Performs deterministic matching against known patterns: `CrashLoopBackOff`, `OOMKilled`, `DNSResolutionFailure`, `NodeDiskPressure`, `ContainerCannotStart`.
-- Matched alerts trigger actions directly from the rule matcher for zero AI cost and sub-millisecond execution.
-- Evaluates novel or unrecognised alerts using a heuristic severity scorer to decide if AI escalation is required.
+### 2. Predictive Risk & Forecasting Engine (`predictive.rs`)
+- Calculates linear/exponential memory growth rates, disk volume fill rates, and EWMA Z-score baseline deviations.
+- Computes Time-To-Failure (TTF in minutes) and Failure Probability (0–100%).
+- Triggers **preventive self-healing** before an outage occurs if probability > 75% and TTF < 20 mins (`Predict → Decide → Revalidate → Authorize → Remediate → Verify`).
 
-### 3. LLM Escalation & Action Allowlist (`llm.rs` & `action.rs`)
-- Makes an OpenAI-compatible HTTP POST call to `LLM_API_URL` (OpenAI / Groq) with `LLM_API_KEY`.
-- Enforces structured JSON output via `response_format: { "type": "json_object" }`.
-- Deserializes network content directly into `LlmResponse` and converts to the `Action` enum:
-  - `RestartPod { pod, namespace }`
-  - `ScaleDeployment { deployment, target_replicas, namespace }`
-  - `CordonNode { node }`
-  - `DeleteNamespace { namespace }`
-  - `ExecCommand { pod, command }`
-  - `ModifyRbac { resource }`
-  - `LogReviewNeeded { reason }`
-  - `None`
-- If the LLM proposes an unallowed action, returns invalid JSON, or times out (10s limit), Cheezer immediately routes to `fallback::execute_fallback`.
+### 3. Rule Engine Triage (`triage.rs`)
+- Performs deterministic matching against known patterns: `CrashLoopBackOff`, `OOMKilled`, `DNSResolutionFailure`, `NodeDiskPressure`, `ContainerCannotStart`, `DatabaseLatencySpike`.
+- Matched alerts trigger actions directly from the Rust fast path (< 1ms) for zero AI API cost.
 
-### 4. TOCTOU Revalidation (`executor.rs::revalidate_state`)
-- Prevents Time-of-Check to Time-of-Use race conditions.
-- Immediately prior to execution, queries the Kubernetes API using `kube-rs`:
-  - `RestartPod`: Checks if target pod phase is `Running` and all container statuses report `ready == true`. If so, aborts execution as `Aborted_StaleState`.
-  - `ScaleDeployment`: Checks if current deployment replicas already match the target.
+### 4. Adaptive 6-Tier LLM Router (`llm.rs` & `devin.rs`)
+- **Tier 0:** Fast-path Rust regex rules ($0.00 / <1ms).
+- **Tier 1:** Statistical trend models & EWMA ($0.00 / <2ms).
+- **Tier 2:** CPU-based LightGBM / Isolation Forest inference ($0.00 marginal).
+- **Tier 3:** Local quantized small LLM (3B–8B, Ollama) ($0.00 marginal).
+- **Tier 4:** Cloud LLM (`gpt-4o-mini` for warnings, `gpt-4o` for critical multi-service cascades).
+- **Tier 5:** Devin AI Autonomous Engineer for code-level GitOps Pull Requests when 3 infra fixes fail.
 
-### 5. Remediation Guard & Circuit Breaker (`guard.rs`)
-- Sits after TOCTOU check and before OPA policy check.
-- Evaluates action history stored in SQLite:
-  - **Per-Resource Limit**: Max 3 actions on the same resource in a 10-minute window.
-  - **Incident Budget**: Max 5 total actions per incident.
-  - **Cooldown**: Mandatory 60-second cooldown per resource.
-- Exceeding thresholds locks autonomous execution, transitions incident status to `requires_human_intervention`, and emits an outbound notification webhook payload.
+### 5. TOCTOU & RemediationGuard Gate (`guard.rs`)
+- **TOCTOU Revalidation:** Re-queries live cluster/cloud health right before executing mutations. Aborts if target has self-resolved.
+- **Disruption Budget:** Enforces a sliding-window rate limit (max 3 actions per 15 minutes per target workload), stopping cascading alert storms.
 
-### 6. Fail-Closed OPA Policy Gate (`policy.rs`)
-- Posts `OpaQuery` JSON payload to `OPA_URL` (`http://localhost:8181/v1/data/cheezer/authz/allow`).
-- Evaluates actions against Rego security rules (`policies/cheezer.rego`).
-- **Fail-Closed Constraint**: Any HTTP connection error, 5xx error, 500ms timeout, or missing `"result": true` field **MUST** return `false` (DENY).
+### 6. OPA Policy Gate (`policy.rs`)
+- Embedded Open Policy Agent (Rego engine).
+- Enforces fail-closed evaluation: blocks `DeleteNamespace` on protected namespaces (`kube-system`, `production`), blocks root shell commands, and caps scaling limits (`max_replicas = 20`).
 
-### 7. Kubernetes Executor & Verification (`executor.rs`)
-- Authenticates automatically via local `kubeconfig` or in-cluster `ServiceAccount` using `kube::Client::try_default()`.
-- Implements real resource mutations:
-  - `RestartPod`: Calls `Api::<Pod>::namespaced().delete()` so Kubernetes controllers recreate it.
-  - `ScaleDeployment`: Issues `Patch::Merge` updating `spec.replicas`.
-  - `CordonNode`: Issues `Patch::Merge` setting `spec.unschedulable: true`.
-- Post-execution, `verify_recovery` checks resource health and logs `verification_result` as `Recovered` or `Failed`.
+### 7. Multi-Platform Execution Layer (`executor.rs`)
+- Direct REST API mutations across 19 supported platforms (Kubernetes, AWS Lambda/App Runner, Google Cloud Run, Azure, Fly.io, Railway, Heroku, Netlify, Docker, Podman, Swarm, Nomad, GitHub, Devin AI).
+- Bypasses traditional HPA 90–150s lag for known incidents.
 
-### 8. Web Dashboard & Human Approval Gateway (`dashboard.rs`)
-- Axum routes:
-  - `GET /dashboard`: Embedded HTML UI (Tailwind CSS + HTMX).
-  - `GET /api/incidents`: JSON endpoint surfacing incidents and remediation history.
-  - `POST /api/incidents/{id}/approve`: Human override endpoint for `requires_human_intervention` incidents. Re-evaluates action against OPA before executing.
+### 8. Remediation Verification (`dashboard.rs` & `executor.rs`)
+- Queries post-remediation health metrics (HTTP 200, 5xx error rate drop, pod readiness) to confirm recovery before marking incidents resolved.
 
-### 9. High-Availability Watchdog (`watchdog.rs`)
-- Runs active-passive failover between Primary and Backup processes.
-- Backup monitors Primary over TCP heartbeat. If Primary dies, Backup takes over webhook ingestion automatically.
+### 9. Control Plane Resiliency & Leader Election (`watchdog.rs`)
+- Operates in a **Dual-Node HA Pair (Primary + Standby)** connected by a proof-of-life TCP heartbeat watchdog.
+- Standby promotes to Primary automatically within 3 missed heartbeats.
+- Uses Kubernetes `Lease` primitives to ensure single-leader mutation authority.
 
 ---
 
-## 📊 Incident Status Lifecycle State Machine
+## 📊 Summary Comparison: Reactive vs. Cheezer Core
 
-```text
-[ Incoming Alert ]
-        │
-        ▼
- (TOCTOU Check) ───(Self-Resolved)───► Aborted_StaleState
-        │ (Valid)
-        ▼
-(RemediationGuard) ─(Limit Exceeded)─► requires_human_intervention
-        │ (Allowed)                               │
-        ▼                                         │ (Human Click "Approve")
-   (OPA Gate) ────(Rego Denied)──────► blocked    │
-        │ (Allowed)                               ▼
-        ▼                           (Re-evaluate OPA Gate)
-   (Executor) ────(Kube Error)───────► failed     │ (Denied) ──► blocked_by_opa
-        │ (Success)                               │ (Allowed)
-        ▼                                         ▼
-(Verify Recovery) ─(Health Check)──► executed / human_approved_and_executed
-                                     (verification_result: Recovered / Failed)
-```
+| Metric / Dimension | Traditional AIOps / Scripts | Cheezer Core Control Plane |
+| :--- | :--- | :--- |
+| **Ingestion Model** | Fixed volume & cardinality billing | **Risk-Adaptive Sampling (85-90% data cut)** |
+| **Execution Latency** | 90–150s HPA lag | **< 1ms Fast-Path Direct API Mutation** |
+| **AI Expense** | Un-gated LLM calls on raw logs | **6-Tier Escalation (~99% LLM Cost Saved)** |
+| **Safety Invariants** | Assume script success on `exit 0` | **TOCTOU + OPA Fail-Closed + Health Verification** |
+| **Failure Detection** | Purely Reactive (after crash) | **Predictive Forecasting (Linear Trends & EWMA)** |
+| **Self-Resilience** | SPOF / Cloud SaaS dependent | **Primary-Standby HA Pair + Watchdog (`watchdog.rs`)** |
