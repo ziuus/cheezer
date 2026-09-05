@@ -13,8 +13,39 @@ use crate::triage;
 use serde_json::json;
 use std::collections::HashMap;
 
-pub async fn serve_dashboard() -> impl IntoResponse {
-    Html(DASHBOARD_HTML)
+pub async fn serve_dashboard(uri: axum::http::Uri) -> impl IntoResponse {
+    let path = uri.path();
+    let active_tab = match path {
+        "/connections" => "connections",
+        "/monitor" | "/metrics" => "metrics",
+        "/logs" => "logs",
+        "/history" => "history",
+        "/settings" => "settings",
+        _ => "incidents",
+    };
+
+    let active_btn_class = "tab-active px-4 py-2 rounded-lg text-xs font-semibold transition border flex items-center space-x-2";
+    let inactive_btn_class = "px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2";
+
+    let mut html = DASHBOARD_HTML.to_string();
+
+    let tabs = ["incidents", "connections", "metrics", "logs", "history", "settings"];
+    for tab in tabs {
+        let btn_placeholder = format!("__TAB_BTN_CLASS_{}__", tab.to_uppercase());
+        let content_placeholder = format!("__TAB_CONTENT_CLASS_{}__", tab.to_uppercase());
+
+        let btn_cls = if tab == active_tab { active_btn_class } else { inactive_btn_class };
+        let content_cls = if tab == active_tab {
+            if tab == "incidents" || tab == "metrics" { "space-y-8" } else { "space-y-6" }
+        } else {
+            if tab == "incidents" || tab == "metrics" { "hidden space-y-8" } else { "hidden space-y-6" }
+        };
+
+        html = html.replace(&btn_placeholder, btn_cls);
+        html = html.replace(&content_placeholder, content_cls);
+    }
+
+    Html(html)
 }
 
 pub async fn get_incidents_json() -> impl IntoResponse {
@@ -750,35 +781,35 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         <!-- Navigation Tab Bar -->
         <nav class="flex flex-wrap items-center space-x-2 my-6 border-b border-slate-800/80 pb-3 gap-y-2">
-            <a id="tab-btn-incidents" href="/incidents" onclick="switchTab('incidents'); return false;" class="tab-active px-4 py-2 rounded-lg text-xs font-semibold transition border flex items-center space-x-2">
+            <a id="tab-btn-incidents" href="/incidents" onclick="switchTab('incidents'); return false;" class="__TAB_BTN_CLASS_INCIDENTS__">
                 <i data-lucide="shield-alert" class="w-4 h-4"></i>
                 <span>Live Incidents & Circuit Breakers</span>
             </a>
-            <a id="tab-btn-connections" href="/connections" onclick="switchTab('connections'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            <a id="tab-btn-connections" href="/connections" onclick="switchTab('connections'); return false;" class="__TAB_BTN_CLASS_CONNECTIONS__">
                 <i data-lucide="link" class="w-4 h-4"></i>
                 <span>Connections</span>
             </a>
-            <a id="tab-btn-metrics" href="/monitor" onclick="switchTab('metrics'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            <a id="tab-btn-metrics" href="/monitor" onclick="switchTab('metrics'); return false;" class="__TAB_BTN_CLASS_METRICS__">
                 <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
                 <span>Monitor</span>
             </a>
-            <a id="tab-btn-logs" href="/logs" onclick="switchTab('logs'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            <a id="tab-btn-logs" href="/logs" onclick="switchTab('logs'); return false;" class="__TAB_BTN_CLASS_LOGS__">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
                 <span>Real-Time Logs</span>
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             </a>
-            <a id="tab-btn-history" href="/history" onclick="switchTab('history'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            <a id="tab-btn-history" href="/history" onclick="switchTab('history'); return false;" class="__TAB_BTN_CLASS_HISTORY__">
                 <i data-lucide="history" class="w-4 h-4"></i>
                 <span>Audit History</span>
             </a>
-            <a id="tab-btn-settings" href="/settings" onclick="switchTab('settings'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            <a id="tab-btn-settings" href="/settings" onclick="switchTab('settings'); return false;" class="__TAB_BTN_CLASS_SETTINGS__">
                 <i data-lucide="settings" class="w-4 h-4"></i>
                 <span>Settings</span>
             </a>
         </nav>
 
         <!-- PAGE 1: INCIDENTS & CIRCUIT BREAKERS -->
-        <div id="tab-content-incidents" class="space-y-8">
+        <div id="tab-content-incidents" class="__TAB_CONTENT_CLASS_INCIDENTS__">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpi-grid">
                 <div class="glass-card rounded-xl p-5 backdrop-blur">
                     <div class="flex items-center justify-between text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -850,7 +881,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- PAGE 2: CONNECTIONS MANAGER & WATCHER ENGINE -->
-        <div id="tab-content-connections" class="hidden space-y-6">
+        <div id="tab-content-connections" class="__TAB_CONTENT_CLASS_CONNECTIONS__">
             <!-- Section 1: Gateways & Connections -->
             <section class="glass-card rounded-2xl p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800/80">
@@ -987,7 +1018,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- PAGE 3: MONITOR & TELEMETRY -->
-        <div id="tab-content-metrics" class="hidden space-y-8">
+        <div id="tab-content-metrics" class="__TAB_CONTENT_CLASS_METRICS__">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="glass-card rounded-2xl p-6 backdrop-blur">
                     <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -1096,7 +1127,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- PAGE 4: REAL-TIME LOG MONITOR -->
-        <div id="tab-content-logs" class="hidden space-y-6">
+        <div id="tab-content-logs" class="__TAB_CONTENT_CLASS_LOGS__">
             <section class="glass-card rounded-2xl p-6 shadow-xl">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 mb-4 border-b border-slate-800/80 gap-4">
                     <div>
@@ -1125,7 +1156,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- PAGE 5: AUDIT HISTORY -->
-        <div id="tab-content-history" class="hidden space-y-6">
+        <div id="tab-content-history" class="__TAB_CONTENT_CLASS_HISTORY__">
             <section class="glass-card rounded-2xl p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800/80">
                     <div>
@@ -1163,7 +1194,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- PAGE 6: CONTROL PLANE SETTINGS -->
-        <div id="tab-content-settings" class="hidden space-y-6">
+        <div id="tab-content-settings" class="__TAB_CONTENT_CLASS_SETTINGS__">
             <section class="glass-card rounded-2xl p-6 shadow-xl max-w-3xl">
                 <div class="pb-4 mb-6 border-b border-slate-800/80">
                     <h2 class="text-base font-bold text-white flex items-center gap-2">
@@ -2006,8 +2037,17 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
             body.innerHTML = html;
         }
 
-        setInterval(fetchIncidents, 1000);
         setInterval(fetchKillSwitchStatus, 1000);
+        setInterval(() => {
+            const tab = getTabFromPath();
+            if (tab === 'incidents') fetchIncidents();
+            if (tab === 'logs') fetchLogs();
+            if (tab === 'metrics') fetchMetrics();
+            if (tab === 'connections') { fetchConnections(); fetchWatchers(); }
+            if (tab === 'history') fetchHistory();
+            if (tab === 'settings') fetchSettings();
+        }, 2000);
+
         window.addEventListener('DOMContentLoaded', () => {
             const tab = getTabFromPath();
             switchTab(tab, false);
