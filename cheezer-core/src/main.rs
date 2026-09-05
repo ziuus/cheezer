@@ -1,4 +1,5 @@
 mod action;
+mod dashboard;
 mod executor;
 mod fallback;
 mod guard;

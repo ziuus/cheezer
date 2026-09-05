@@ -97,6 +97,59 @@ impl Action {
             Action::None => "none".to_string(),
         }
     }
+
+    pub fn parse_from_string(s: &str) -> Self {
+        let s = s.trim();
+        if s.starts_with("restart pod ") {
+            let pod = s.trim_start_matches("restart pod ").trim().to_string();
+            Action::RestartPod {
+                pod,
+                namespace: "default".to_string(),
+            }
+        } else if s.starts_with("scale deployment ") {
+            let parts: Vec<&str> = s.trim_start_matches("scale deployment ").split_whitespace().collect();
+            if parts.len() >= 2 {
+                let deployment = parts[0].to_string();
+                let replicas = parts[1].parse::<u32>().unwrap_or(1);
+                Action::ScaleDeployment {
+                    deployment,
+                    target_replicas: replicas,
+                    namespace: "default".to_string(),
+                }
+            } else if !parts.is_empty() {
+                Action::ScaleDeployment {
+                    deployment: parts[0].to_string(),
+                    target_replicas: 1,
+                    namespace: "default".to_string(),
+                }
+            } else {
+                Action::None
+            }
+        } else if s.starts_with("cordon node ") {
+            let node = s.trim_start_matches("cordon node ").trim().to_string();
+            Action::CordonNode { node }
+        } else if s.starts_with("delete namespace ") {
+            let namespace = s.trim_start_matches("delete namespace ").trim().to_string();
+            Action::DeleteNamespace { namespace }
+        } else if s.starts_with("modify rbac ") {
+            let resource = s.trim_start_matches("modify rbac ").trim().to_string();
+            Action::ModifyRbac { resource }
+        } else if s.starts_with("exec pod ") {
+            let pod = s.trim_start_matches("exec pod ").trim().to_string();
+            Action::ExecCommand {
+                pod,
+                command: vec!["exec".to_string()],
+            }
+        } else if s.starts_with("log manual review needed:") {
+            let reason = s.trim_start_matches("log manual review needed:").trim().to_string();
+            Action::LogReviewNeeded { reason }
+        } else if s.starts_with("log check node capacity:") {
+            let reason = s.trim_start_matches("log check node capacity:").trim().to_string();
+            Action::LogCheckCapacity { reason }
+        } else {
+            Action::None
+        }
+    }
 }
 
 impl fmt::Display for Action {

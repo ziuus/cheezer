@@ -126,6 +126,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_executor_k8s_real_dry_run() {
+        let _guard = crate::triage::tests::TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::remove_var("MOCK_EXECUTOR");
         }

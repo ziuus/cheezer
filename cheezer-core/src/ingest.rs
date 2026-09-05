@@ -1,11 +1,11 @@
 use axum::{
-    routing::post, 
+    routing::{get, post}, 
     Json, 
     Router, 
     http::{HeaderMap, StatusCode}
 };
 use serde::{Deserialize, Serialize};
-use crate::triage;
+use crate::{dashboard, triage};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Alert {
@@ -23,7 +23,11 @@ pub struct AlertmanagerPayload {
 }
 
 pub fn create_router() -> Router {
-    Router::new().route("/api/grafana_webhook", post(handle_webhook))
+    Router::new()
+        .route("/api/grafana_webhook", post(handle_webhook))
+        .route("/dashboard", get(dashboard::serve_dashboard))
+        .route("/api/incidents", get(dashboard::get_incidents_json))
+        .route("/api/incidents/{id}/approve", post(dashboard::approve_incident))
 }
 
 async fn handle_webhook(
@@ -57,6 +61,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_webhook_auth_and_parse() {
+        let _guard = crate::triage::tests::TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         // Start server on a random ephemeral port
         let app = create_router();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

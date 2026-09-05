@@ -1,7 +1,8 @@
 use rusqlite::{Connection, Result};
+use serde::{Deserialize, Serialize};
 use std::sync::{Mutex, OnceLock};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct IncidentRecord {
     pub id: i64,
     pub signature: String,
@@ -9,6 +10,15 @@ pub struct IncidentRecord {
     pub mode: String,
     pub action: String,
     pub status: String,
+    pub timestamp: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RemediationRecord {
+    pub id: i64,
+    pub incident_id: i64,
+    pub resource: String,
+    pub action: String,
     pub timestamp: String,
 }
 
@@ -102,6 +112,35 @@ pub fn log_remediation(incident_id: i64, resource: &str, action: &str) -> Result
     Ok(conn.last_insert_rowid())
 }
 
+pub fn reset_resource_remediations(resource: &str) -> Result<()> {
+    let conn = get_db().lock().unwrap();
+    conn.execute(
+        "DELETE FROM remediation_history WHERE resource = ?1",
+        rusqlite::params![resource],
+    )?;
+    Ok(())
+}
+
+pub fn get_remediations() -> Result<Vec<RemediationRecord>> {
+    let conn = get_db().lock().unwrap();
+    let mut stmt = conn.prepare("SELECT id, incident_id, resource, action, DATETIME(timestamp) FROM remediation_history ORDER BY id DESC LIMIT 50")?;
+    let rows = stmt.query_map([], |row| {
+        Ok(RemediationRecord {
+            id: row.get(0)?,
+            incident_id: row.get(1)?,
+            resource: row.get(2)?,
+            action: row.get(3)?,
+            timestamp: row.get(4).unwrap_or_default(),
+        })
+    })?;
+
+    let mut list = Vec::new();
+    for r in rows {
+        list.push(r?);
+    }
+    Ok(list)
+}
+
 pub fn get_resource_action_count(resource: &str, window_seconds: i64) -> Result<i64> {
     let conn = get_db().lock().unwrap();
     let query = format!(
@@ -136,7 +175,6 @@ pub fn get_seconds_since_last_resource_action(resource: &str) -> Result<Option<i
     }
 }
 
-
 pub fn log_incident(signature: &str, severity: &str, mode: &str, action: &str, status: &str) -> Result<i64> {
     let conn = get_db().lock().unwrap();
     conn.execute(
@@ -161,6 +199,34 @@ pub fn log_incident(signature: &str, severity: &str, mode: &str, action: &str, s
     }
 
     Ok(incident_id)
+}
+
+pub fn update_incident_status(id: i64, status: &str) -> Result<()> {
+    let conn = get_db().lock().unwrap();
+    conn.execute(
+        "UPDATE incidents SET status = ?1 WHERE id = ?2",
+        rusqlite::params![status, id],
+    )?;
+    Ok(())
+}
+
+pub fn get_incident_by_id(id: i64) -> Result<Option<IncidentRecord>> {
+    let conn = get_db().lock().unwrap();
+    let mut stmt = conn.prepare("SELECT id, signature, COALESCE(severity, ''), mode, action, status, DATETIME(timestamp) FROM incidents WHERE id = ?1")?;
+    let mut rows = stmt.query(rusqlite::params![id])?;
+    if let Some(row) = rows.next()? {
+        Ok(Some(IncidentRecord {
+            id: row.get(0)?,
+            signature: row.get(1)?,
+            severity: row.get(2)?,
+            mode: row.get(3)?,
+            action: row.get(4)?,
+            status: row.get(5)?,
+            timestamp: row.get(6).unwrap_or_default(),
+        }))
+    } else {
+        Ok(None)
+    }
 }
 
 pub fn get_incidents() -> Result<Vec<IncidentRecord>> {
@@ -230,4 +296,5 @@ pub fn log_action(alert_id: i64, mode: &str, action: &str) -> Result<()> {
     )?;
     Ok(())
 }
+
 

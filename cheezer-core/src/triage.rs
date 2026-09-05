@@ -62,6 +62,7 @@ async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &s
     match guard::RemediationGuard::evaluate(alert_id, target_resource, action) {
         guard::GuardResult::Block(reason) => {
             log::warn!("Action blocked by Remediation Guard: {}", reason);
+            guard::send_outbound_notification(target_resource, &action_str, &reason);
             let _ = store::log_incident(signature, severity, mode, &action_str, "requires_human_intervention");
             let _ = store::log_action(alert_id, mode, &format!("blocked_by_guard: {}", reason));
             return;
@@ -96,16 +97,16 @@ async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &s
 
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use std::collections::HashMap;
     use std::sync::Mutex;
 
-    static TEST_MUTEX: Mutex<()> = Mutex::new(());
+pub static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
     #[tokio::test]
     async fn test_rule_first_triage_and_logging() {
-        let _guard = TEST_MUTEX.lock().unwrap();
+        let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::set_var("MOCK_EXECUTOR", "true");
         }
@@ -167,7 +168,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_llm_escalation_for_novel_alert() {
-        let _guard = TEST_MUTEX.lock().unwrap();
+        let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::set_var("MOCK_EXECUTOR", "true");
             std::env::remove_var("MOCK_LLM_RESPONSE");
@@ -208,7 +209,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_llm_structured_parsing_success() {
-        let _guard = TEST_MUTEX.lock().unwrap();
+        let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         let valid_json = serde_json::json!({
             "incident_class": "DatabaseLatencySpike",
             "confidence": 0.95,
@@ -258,7 +259,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_llm_invalid_action_triggers_fallback() {
-        let _guard = TEST_MUTEX.lock().unwrap();
+        let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         let invalid_json = serde_json::json!({
             "incident_class": "MaliciousAttempt",
             "confidence": 0.9,
@@ -308,7 +309,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_llm_timeout_triggers_fallback() {
-        let _guard = TEST_MUTEX.lock().unwrap();
+        let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::set_var("MOCK_EXECUTOR", "true");
             std::env::set_var("FORCE_LLM_TIMEOUT", "true");
@@ -350,7 +351,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_opa_blocks_dangerous_actions() {
-        let _guard = TEST_MUTEX.lock().unwrap();
+        let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         let unsafe_json = serde_json::json!({
             "incident_class": "UnsafeRequest",
             "confidence": 0.95,
@@ -399,7 +400,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_remediation_loop_blocked() {
-        let _guard = TEST_MUTEX.lock().unwrap();
+        let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         unsafe {
             std::env::set_var("MOCK_EXECUTOR", "true");
             std::env::set_var("IGNORE_COOLDOWN", "true");

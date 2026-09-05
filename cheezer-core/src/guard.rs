@@ -52,12 +52,25 @@ impl RemediationGuard {
     }
 }
 
+pub fn send_outbound_notification(resource: &str, action: &str, reason: &str) {
+    let payload = serde_json::json!({
+        "event": "requires_human_intervention",
+        "resource": resource,
+        "action": action,
+        "reason": reason,
+        "circuit_breaker": "LOCKED",
+        "channel": "slack/pagerduty/webhook"
+    });
+    log::info!("[OUTBOUND NOTIFICATION WEBHOOK] {}", payload);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[tokio::test]
     async fn test_guard_thresholds() {
+        let _guard = crate::triage::tests::TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
         store::init_db().unwrap();
         store::clear_db().unwrap();
 
