@@ -1,33 +1,35 @@
 # Cheezer Core — Hackathon & SRE Keynote Pitch Script
 
-> **Product Identity:** The Autonomous, Vendor-Neutral, Safety-First Recovery Control Plane  
-> **Core Value:** *"Cheezer doesn't just observe failures or execute runbooks. It autonomously decides whether recovery is safe, performs the recovery, and proves that the system actually recovered."*
+> **Product Strategy:** **⚡ FAST** (Sub-ms Rust) · **💰 CHEAP** (~99% LLM Cost Saved) · **🔮 PREDICTIVE** (Failure Forecasting Engine)  
+> **Core Identity:** *"Cheap enough to run continuously, fast enough to remediate in milliseconds, and predictive enough to act before failure."*  
+> **Technical Tagline:** **Predict → Decide → Revalidate → Authorize → Remediate → Verify.**
 
 ---
 
 ## 🎙️ 2-Minute Pitch Script
 
-### **[0:00 - 0:25] The Hook: Beyond Observability**
+### **[0:00 - 0:25] The Hook: Predictive vs. Reactive Observability**
 "Hi everyone, we’re team Cheezer. 
 
-Every day, engineering teams pay millions to platforms like Dynatrace, Datadog, or PagerDuty to watch their systems break. But when an incident hits at 3 AM, observability tools just send an alert. A human still has to wake up, re-verify if the issue is real, check policy, run a script, and manually verify if the system actually recovered.
+Every day, engineering teams pay millions to platforms like Dynatrace, Datadog, or PagerDuty to watch their systems break. But traditional observability is purely **reactive**—it alerts you *after* a pod has crashed, *after* memory has filled, or *after* customers experience downtime.
 
-We built **Cheezer Core**. Cheezer isn't another monitoring dashboard or a cheaper Dynatrace. **Cheezer is an autonomous recovery control plane that sits outside your infrastructure and safely takes systems from incident to verified recovery.**"
+We built **Cheezer Core**. Cheezer isn't another monitoring dashboard or a cheaper Dynatrace. **Cheezer is an autonomous recovery control plane built on three metrics: cheap enough to run continuously, fast enough to remediate in milliseconds, and predictive enough to act before failure.**"
 
 ---
 
-### **[0:25 - 1:15] The Demo & The Closed-Loop Core Engine**
+### **[0:25 - 1:15] The Predictive Loop & 4-Tier Decision Matrix**
 "*(Point to live Cheezer Material 3 dashboard on screen)*
 
-Look at how Cheezer handles an incident. When a Grafana or Prometheus alert fires, Cheezer doesn't blindly trigger a script. It executes a strict 7-stage closed recovery loop:
+Look at how Cheezer handles an incident. Instead of waiting for a crash:
 
-1. **Rule-First Diagnosis (<1ms):** Instantly matches known patterns (`CrashLoopBackOff`, `OOMKilled`) via Rust fast-paths, or escalates novel anomalies to an LLM signal classifier.
-2. **TOCTOU Revalidation (12ms):** Before touching anything, Cheezer re-queries live cluster health. If the pod self-resolved, it aborts instantly with zero race conditions.
-3. **OPA Policy Gate (Rego):** Validates the proposed fix against fail-closed security rules. No unauthorized root execution, no deleting system namespaces.
-4. **RemediationGuard Budget:** Enforces strict disruption budgets—max 3 actions per 15 minutes per workload—stopping cascading alert storms.
-5. **Multi-Platform Remediation:** Executes the fix natively across 19 platforms—Kubernetes, AWS, Vercel, GCP, or Docker.
-6. **First-Class Verification:** **This is our biggest moat.** Cheezer doesn't consider an action successful because a command returned exit code 0. It queries 5xx error rates, pod health, and latency to **prove the system actually recovered**.
-7. **Infra-to-Code Escalation:** If infrastructure remediation fails, Cheezer recognizes an application-level defect and automatically dispatches a task to Devin AI to open a GitOps Pull Request on GitHub!"
+1. **Predictive Failure Engine (`predictive.rs`):** Calculates linear memory growth rates and EWMA baseline deviations. E.g., *"Pod `api-gateway` has an 87% probability of an OOMKilled breach in 18 minutes."* Cheezer initiates **preventive remediation** before the outage happens!
+2. **Sub-Millisecond Rust Fast-Path (<1ms):** Known failure patterns (`CrashLoopBackOff`, `OOMKilled`) execute in microseconds in memory with zero LLM API costs.
+3. **Adaptive 4-Tier LLM Router:** Calls heavy LLMs (`gpt-4o`) ONLY for critical multi-service cascades. Lightweight novel alerts use fast models (`gpt-4o-mini`), saving **~99% of LLM compute costs**.
+4. **TOCTOU Revalidation (12ms):** Re-queries live health right before execution. If the pod self-resolved, Cheezer aborts instantly.
+5. **OPA Policy Gate (Rego):** Validates the proposed fix against fail-closed security policies. No unauthorized root execution, no deleting system namespaces.
+6. **RemediationGuard Budget:** Enforces strict disruption budgets—max 3 actions per 15 minutes per target.
+7. **First-Class Verification:** Cheezer doesn't consider an action successful because a command returned exit code 0. It queries 5xx error rates, pod health, and latency to **prove system health actually recovered**.
+8. **Infra-to-Code Escalation:** If 3 infra remediations fail, Cheezer dispatches Devin AI to open a declarative GitOps Pull Request on GitHub!"
 
 ---
 

@@ -12,6 +12,7 @@ mod store;
 mod triage;
 mod watchdog;
 mod devin;
+mod predictive;
 
 
 

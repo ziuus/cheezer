@@ -7,13 +7,19 @@
 
 ## 1. Project Overview & Core Mission
 
-**Cheezer Core** is an enterprise-grade, autonomous SRE self-healing control plane written in high-performance Rust (`axum` + `tokio`). 
+**Cheezer Core** is an autonomous SRE self-healing control plane written in high-performance Rust (`axum` + `tokio`). 
 
-It acts as an automated 24/7 Reliability Engineer that:
+It is designed around **Three Core Pillars**:
+- **⚡ FAST:** Sub-millisecond Rust rule-first execution path (<1ms). Zero network or LLM round-trip latency for known failure patterns (`CrashLoopBackOff`, `OOMKilled`).
+- **💰 CHEAP:** Adaptive 4-Tier LLM Router (`select_llm_model`). In-memory feature extraction, local rolling window stats, and cost-aware model tiering save ~99% of LLM API costs.
+- **🔮 PREDICTIVE:** Predictive Risk & Forecasting Engine (`src/predictive.rs`). Extrapolates memory growth, disk fill rates, and EWMA anomaly Z-scores to act **BEFORE** outages occur (`Predict → Decide → Revalidate → Authorize → Remediate → Verify`).
+
+### Core Operational Capabilities:
 1. **Ingests real-time telemetry and incident alerts** from Prometheus, Alertmanager, Datadog, Sentry, AWS CloudWatch, and custom webhooks.
-2. **Evaluates incidents using a 2-tier decision matrix**:
-   - **Fast-Path Rule Engine** (<1ms latency) for known failure modes.
-   - **LLM Escalation Engine** (OpenAI / Groq / Devin AI) for novel or complex anomalies.
+2. **Predicts & Evaluates incidents using a 3-tier decision matrix**:
+   - **Level 1/2 — Predictive Risk Engine (`src/predictive.rs`)**: Linear trend extrapolation and EWMA baseline anomaly detection.
+   - **Level 3 — Fast-Path Rule Engine (`src/triage.rs`)**: Sub-millisecond deterministic regex pattern matching.
+   - **Level 4 — LLM Escalation Router (`src/llm.rs`)**: Adaptive model tiering (`gpt-4o-mini` for warnings, `gpt-4o` for critical multi-service cascades).
 3. **Enforces strict zero-trust safety gates**:
    - **OPA (Open Policy Agent)** fail-closed policy validation.
    - **TOCTOU (Time-of-Check to Time-of-Use)** re-validation to prevent stale state execution.
