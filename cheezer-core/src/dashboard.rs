@@ -547,9 +547,24 @@ pub async fn get_provider_projects(
             projects.push(json!({ "id": "ziuus/order-microservice", "name": "ziuus/order-microservice" }));
         }
     } else if p == "k8s" {
-        projects.push(json!({ "id": "flaky-order-service", "name": "flaky-order-service (Deployment)" }));
-        projects.push(json!({ "id": "cheezer-core", "name": "cheezer-core (Deployment)" }));
-        projects.push(json!({ "id": "grafana-alertmanager", "name": "grafana-alertmanager (Pod)" }));
+        if let Ok(client) = kube::Client::try_default().await {
+            use k8s_openapi::api::apps::v1::Deployment;
+            use kube::api::Api;
+            let deployments: Api<Deployment> = Api::all(client);
+            if let Ok(list) = deployments.list(&Default::default()).await {
+                for d in list.items {
+                    if let Some(name) = d.metadata.name {
+                        projects.push(json!({
+                            "id": name,
+                            "name": format!("{} (Deployment)", name)
+                        }));
+                    }
+                }
+            }
+        }
+        if projects.is_empty() {
+            projects.push(json!({ "id": "cheezer-core", "name": "cheezer-core (Deployment)" }));
+        }
     } else if p == "aws" {
         projects.push(json!({ "id": "floci-order-processor", "name": "floci-order-processor (ECS Task)" }));
         projects.push(json!({ "id": "sqs-event-bus", "name": "cheezer-alerts (SQS Queue)" }));
