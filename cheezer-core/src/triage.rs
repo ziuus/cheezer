@@ -58,6 +58,21 @@ async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &s
         action.resource_type()
     };
 
+    // 0. TOCTOU Revalidation Check (runs BEFORE Remediation Guard & OPA)
+    if let Err(executor::ExecutionError::StaleState(reason)) = executor::revalidate_state(action).await {
+        log::warn!("Execution ABORTED due to TOCTOU stale state: {}", reason);
+        let _ = store::log_incident_with_verification(
+            signature,
+            severity,
+            mode,
+            &action_str,
+            "Aborted_StaleState",
+            "Aborted_StaleState",
+        );
+        let _ = store::log_action(alert_id, mode, &format!("aborted_stale_state: {}", reason));
+        return;
+    }
+
     // 1. Remediation Guard Check (sits BEFORE OPA policy check)
     match guard::RemediationGuard::evaluate(alert_id, target_resource, action) {
         guard::GuardResult::Block(reason) => {
@@ -79,17 +94,25 @@ async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &s
         return;
     }
 
-    // 3. Executor
+    // 3. Executor with Post-Execution Recovery Verification
     match executor::apply_action(action, alert).await {
         Ok(_) => {
             log::info!("Successfully executed action: {}", action_str);
             let _ = store::log_remediation(alert_id, target_resource, &action_str);
-            let _ = store::log_incident(signature, severity, mode, &action_str, "executed");
+
+            let is_recovered = match executor::verify_recovery(action).await {
+                Ok(true) => "Recovered",
+                Ok(false) => "Failed",
+                Err(_) => "Failed",
+            };
+            log::info!("Post-remediation verification status: {}", is_recovered);
+
+            let _ = store::log_incident_with_verification(signature, severity, mode, &action_str, "executed", is_recovered);
             let _ = store::log_action(alert_id, mode, &action_str);
         }
         Err(e) => {
             log::error!("Failed to execute action: {}", e);
-            let _ = store::log_incident(signature, severity, mode, &action_str, "failed");
+            let _ = store::log_incident_with_verification(signature, severity, mode, &action_str, "failed", "Failed");
             let _ = store::log_action(alert_id, mode, &format!("failed: {}", action_str));
         }
     }
@@ -443,6 +466,43 @@ pub static TEST_MUTEX: Mutex<()> = Mutex::new(());
         }
 
         println!("SUCCESS: RemediationGuard blocked 4th rapid pod restart before OPA was reached, marking status='requires_human_intervention'!");
+    }
+
+    #[tokio::test]
+    async fn test_executor_aborts_on_stale_state() {
+        let _guard = TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
+        unsafe {
+            std::env::set_var("MOCK_EXECUTOR", "true");
+            std::env::set_var("MOCK_OPA_ENABLED", "true");
+            std::env::set_var("MOCK_STALE_STATE", "true");
+        }
+        store::init_db().unwrap();
+        store::clear_db().unwrap();
+
+        let mut labels = HashMap::new();
+        labels.insert("alertname".to_string(), "CrashLoopBackOff".to_string());
+        labels.insert("severity".to_string(), "critical".to_string());
+        labels.insert("pod".to_string(), "self-healing-pod".to_string());
+        labels.insert("namespace".to_string(), "default".to_string());
+
+        let alert = Alert {
+            status: "firing".to_string(),
+            labels,
+            annotations: HashMap::new(),
+        };
+
+        process_alert(alert).await;
+
+        let incidents = store::get_incidents().unwrap();
+        assert_eq!(incidents.len(), 1, "Expected 1 incident in database");
+        assert_eq!(incidents[0].status, "Aborted_StaleState");
+        assert_eq!(incidents[0].verification_result, "Aborted_StaleState");
+
+        unsafe {
+            std::env::remove_var("MOCK_STALE_STATE");
+        }
+
+        println!("SUCCESS: TOCTOU revalidation aborted execution on self-healing pod and logged Aborted_StaleState in SQLite!");
     }
 }
 

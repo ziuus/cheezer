@@ -83,7 +83,13 @@ pub async fn approve_incident(
     match executor::apply_action(&action, &dummy_alert).await {
         Ok(_) => {
             log::info!("Human approved action executed successfully for incident {}", id);
+            let is_recovered = match executor::verify_recovery(&action).await {
+                Ok(true) => "Recovered",
+                Ok(false) => "Failed",
+                Err(_) => "Failed",
+            };
             let _ = store::update_incident_status(id, "human_approved_and_executed");
+            let _ = store::update_incident_verification(id, is_recovered);
 
             // Reset/release the RemediationGuard lock for the target resource
             let target_resource = action.target_resource();
@@ -94,6 +100,7 @@ pub async fn approve_incident(
 
             Ok(Json(json!({
                 "status": "human_approved_and_executed",
+                "verification_result": is_recovered,
                 "incident_id": id,
                 "action": incident.action
             })))

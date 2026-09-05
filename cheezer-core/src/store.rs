@@ -10,6 +10,7 @@ pub struct IncidentRecord {
     pub mode: String,
     pub action: String,
     pub status: String,
+    pub verification_result: String,
     pub timestamp: String,
 }
 
@@ -42,10 +43,12 @@ pub fn init_db() -> Result<()> {
             mode TEXT NOT NULL,
             action TEXT NOT NULL,
             status TEXT NOT NULL,
+            verification_result TEXT DEFAULT 'N/A',
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )",
         [],
     )?;
+    let _ = conn.execute("ALTER TABLE incidents ADD COLUMN verification_result TEXT DEFAULT 'N/A'", []);
     
     conn.execute(
         "CREATE TABLE IF NOT EXISTS alerts (
@@ -176,10 +179,21 @@ pub fn get_seconds_since_last_resource_action(resource: &str) -> Result<Option<i
 }
 
 pub fn log_incident(signature: &str, severity: &str, mode: &str, action: &str, status: &str) -> Result<i64> {
+    log_incident_with_verification(signature, severity, mode, action, status, "N/A")
+}
+
+pub fn log_incident_with_verification(
+    signature: &str,
+    severity: &str,
+    mode: &str,
+    action: &str,
+    status: &str,
+    verification: &str,
+) -> Result<i64> {
     let conn = get_db().lock().unwrap();
     conn.execute(
-        "INSERT INTO incidents (signature, severity, mode, action, status) VALUES (?1, ?2, ?3, ?4, ?5)",
-        rusqlite::params![signature, severity, mode, action, status],
+        "INSERT INTO incidents (signature, severity, mode, action, status, verification_result) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        rusqlite::params![signature, severity, mode, action, status, verification],
     )?;
     
     let incident_id = conn.last_insert_rowid();
@@ -210,9 +224,18 @@ pub fn update_incident_status(id: i64, status: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn update_incident_verification(id: i64, verification: &str) -> Result<()> {
+    let conn = get_db().lock().unwrap();
+    conn.execute(
+        "UPDATE incidents SET verification_result = ?1 WHERE id = ?2",
+        rusqlite::params![verification, id],
+    )?;
+    Ok(())
+}
+
 pub fn get_incident_by_id(id: i64) -> Result<Option<IncidentRecord>> {
     let conn = get_db().lock().unwrap();
-    let mut stmt = conn.prepare("SELECT id, signature, COALESCE(severity, ''), mode, action, status, DATETIME(timestamp) FROM incidents WHERE id = ?1")?;
+    let mut stmt = conn.prepare("SELECT id, signature, COALESCE(severity, ''), mode, action, status, COALESCE(verification_result, 'N/A'), DATETIME(timestamp) FROM incidents WHERE id = ?1")?;
     let mut rows = stmt.query(rusqlite::params![id])?;
     if let Some(row) = rows.next()? {
         Ok(Some(IncidentRecord {
@@ -222,7 +245,8 @@ pub fn get_incident_by_id(id: i64) -> Result<Option<IncidentRecord>> {
             mode: row.get(3)?,
             action: row.get(4)?,
             status: row.get(5)?,
-            timestamp: row.get(6).unwrap_or_default(),
+            verification_result: row.get(6)?,
+            timestamp: row.get(7).unwrap_or_default(),
         }))
     } else {
         Ok(None)
@@ -231,7 +255,7 @@ pub fn get_incident_by_id(id: i64) -> Result<Option<IncidentRecord>> {
 
 pub fn get_incidents() -> Result<Vec<IncidentRecord>> {
     let conn = get_db().lock().unwrap();
-    let mut stmt = conn.prepare("SELECT id, signature, COALESCE(severity, ''), mode, action, status, DATETIME(timestamp) FROM incidents ORDER BY id ASC")?;
+    let mut stmt = conn.prepare("SELECT id, signature, COALESCE(severity, ''), mode, action, status, COALESCE(verification_result, 'N/A'), DATETIME(timestamp) FROM incidents ORDER BY id ASC")?;
     let rows = stmt.query_map([], |row| {
         Ok(IncidentRecord {
             id: row.get(0)?,
@@ -240,7 +264,8 @@ pub fn get_incidents() -> Result<Vec<IncidentRecord>> {
             mode: row.get(3)?,
             action: row.get(4)?,
             status: row.get(5)?,
-            timestamp: row.get(6).unwrap_or_default(),
+            verification_result: row.get(6)?,
+            timestamp: row.get(7).unwrap_or_default(),
         })
     })?;
 
