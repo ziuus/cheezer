@@ -1394,7 +1394,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
 
         function initLucideIcons() {
             if (window.lucide) {
-                window.
+                window.lucide.createIcons();
             }
         }
 
@@ -1879,6 +1879,10 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         async function fetchHistory() {
             try {
                 const res = await fetch('/api/history');
+                if (!res.ok) {
+                    console.error("Failed to fetch history:", res.statusText);
+                    return;
+                }
                 const data = await res.json();
                 renderHistory(data.history || []);
             } catch (err) {
@@ -1889,6 +1893,17 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         function renderHistory(list) {
             const body = document.getElementById('history-body');
             if (!body) return;
+            if (!list || list.length === 0) {
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-[#80868B]">
+                            <div class="text-sm font-semibold text-[#1F1F1F]">No audit activity yet</div>
+                            <div class="text-xs text-[#444746] mt-1">Incidents, automated actions, and verification records will appear here once Cheezer Core records activity.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
             let html = '';
             for (const item of list) {
                 html += `
