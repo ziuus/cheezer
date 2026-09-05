@@ -123,7 +123,8 @@ pub async fn analyze(alert: &Alert) -> Decision {
 
     match timeout(timeout_dur, call_llm(alert, force_timeout)).await {
         Ok(Ok(raw_json_str)) => {
-            match serde_json::from_str::<LlmResponse>(&raw_json_str) {
+            let cleaned = clean_json_response(&raw_json_str);
+            match serde_json::from_str::<LlmResponse>(&cleaned) {
                 Ok(response) => {
                     if response.confidence >= 0.5 {
                         match response.to_action() {
@@ -164,6 +165,23 @@ pub async fn analyze(alert: &Alert) -> Decision {
             }
         }
     }
+}
+
+fn clean_json_response(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.starts_with("```") {
+        let lines: Vec<&str> = trimmed.lines().collect();
+        if lines.len() >= 2 {
+            let start = if lines[0].starts_with("```") { 1 } else { 0 };
+            let end = if lines.last().map(|l| l.starts_with("```")).unwrap_or(false) {
+                lines.len() - 1
+            } else {
+                lines.len()
+            };
+            return lines[start..end].join("\n").trim().to_string();
+        }
+    }
+    trimmed.to_string()
 }
 
 async fn call_llm(alert: &Alert, force_timeout: bool) -> Result<String, Box<dyn std::error::Error>> {

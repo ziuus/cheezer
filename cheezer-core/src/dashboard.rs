@@ -9,6 +9,7 @@ use crate::executor;
 use crate::ingest::Alert;
 use crate::policy;
 use crate::store;
+use crate::triage;
 use serde_json::json;
 use std::collections::HashMap;
 
@@ -23,6 +24,29 @@ pub async fn get_incidents_json() -> impl IntoResponse {
         "incidents": incidents,
         "remediations": remediations
     }))
+}
+
+pub async fn simulate_alert(
+    Json(alert): Json<Alert>
+) -> impl IntoResponse {
+    log::info!("Simulating alert via Web Dashboard: {:?}", alert);
+    tokio::spawn(async move {
+        triage::process_alert(alert).await;
+    });
+    Json(json!({"status": "submitted"}))
+}
+
+#[derive(serde::Deserialize)]
+pub struct ResetLockRequest {
+    pub resource: String,
+}
+
+pub async fn reset_circuit_breaker(
+    Json(req): Json<ResetLockRequest>
+) -> impl IntoResponse {
+    log::info!("Resetting circuit breaker lock for resource: {}", req.resource);
+    let _ = store::reset_resource_remediations(&req.resource);
+    Json(json!({"status": "reset", "resource": req.resource}))
 }
 
 pub async fn approve_incident(

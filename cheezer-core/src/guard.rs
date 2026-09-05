@@ -62,6 +62,19 @@ pub fn send_outbound_notification(resource: &str, action: &str, reason: &str) {
         "channel": "slack/pagerduty/webhook"
     });
     log::info!("[OUTBOUND NOTIFICATION WEBHOOK] {}", payload);
+
+    if let Ok(webhook_url) = std::env::var("NOTIFICATION_WEBHOOK_URL") {
+        if !webhook_url.is_empty() {
+            let client = reqwest::Client::new();
+            let payload_clone = payload.clone();
+            tokio::spawn(async move {
+                match client.post(&webhook_url).json(&payload_clone).send().await {
+                    Ok(res) => log::info!("Outbound webhook dispatched to {}: status {}", webhook_url, res.status()),
+                    Err(e) => log::warn!("Failed to dispatch outbound notification webhook: {}", e),
+                }
+            });
+        }
+    }
 }
 
 #[cfg(test)]

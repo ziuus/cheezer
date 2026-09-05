@@ -28,6 +28,8 @@ pub fn create_router() -> Router {
         .route("/dashboard", get(dashboard::serve_dashboard))
         .route("/api/incidents", get(dashboard::get_incidents_json))
         .route("/api/incidents/{id}/approve", post(dashboard::approve_incident))
+        .route("/api/alerts/simulate", post(dashboard::simulate_alert))
+        .route("/api/circuit_breaker/reset", post(dashboard::reset_circuit_breaker))
 }
 
 async fn handle_webhook(
