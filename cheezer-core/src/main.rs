@@ -7,9 +7,11 @@ mod guard;
 mod ingest;
 mod llm;
 mod policy;
+mod state;
 mod store;
 mod triage;
 mod watchdog;
+
 
 
 use std::env;

@@ -172,6 +172,10 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 </div>
             </div>
             <div class="flex items-center space-x-3">
+                <button id="kill-switch-btn" onclick="toggleKillSwitch()" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition border">
+                    <span id="kill-switch-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                    <span id="kill-switch-text">LOADING STATUS...</span>
+                </button>
                 <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-300">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>WATCHDOG ACTIVE</span>
@@ -274,6 +278,43 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
     </div>
 
     <script>
+        async function fetchKillSwitchStatus() {
+            try {
+                const res = await fetch('/api/system/status');
+                const data = await res.json();
+                updateKillSwitchUI(data.active);
+            } catch (err) {
+                console.error("Failed to fetch kill switch status:", err);
+            }
+        }
+
+        async function toggleKillSwitch() {
+            try {
+                const res = await fetch('/api/system/toggle', { method: 'POST' });
+                const data = await res.json();
+                updateKillSwitchUI(data.active);
+            } catch (err) {
+                alert(`Error toggling operator state: ${err}`);
+            }
+        }
+
+        function updateKillSwitchUI(active) {
+            const btn = document.getElementById('kill-switch-btn');
+            const dot = document.getElementById('kill-switch-dot');
+            const txt = document.getElementById('kill-switch-text');
+            if (!btn || !dot || !txt) return;
+
+            if (active) {
+                btn.className = "flex items-center space-x-2 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer shadow-lg shadow-emerald-500/10";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                txt.innerText = "ENGINE ACTIVE (MUTATIONS ENABLED)";
+            } else {
+                btn.className = "flex items-center space-x-2 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-500/60 text-rose-300 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition cursor-pointer shadow-lg shadow-rose-500/20";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+                txt.innerText = "KILL-SWITCH ENGAGED (MUTATIONS FROZEN)";
+            }
+        }
+
         async function approveIncident(id) {
             if (!confirm(`Are you sure you want to approve and execute incident #${id}? Action will be validated by OPA before execution.`)) return;
             try {
@@ -385,7 +426,9 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         }
 
         setInterval(fetchIncidents, 2000);
+        setInterval(fetchKillSwitchStatus, 2000);
         fetchIncidents();
+        fetchKillSwitchStatus();
     </script>
 </body>
 </html>
