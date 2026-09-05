@@ -837,7 +837,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cheezer Core • Control Plane</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #080c14; }
@@ -849,36 +849,63 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         .google-header { background-color: #FFFFFF; border-bottom: 1px solid #DADCE0; }
 
     </style>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #F3F6FC; }
+        h1, h2, h3, h4, h5, .google-sans { font-family: 'Outfit', 'Google Sans', sans-serif; }
+        .material-symbols-outlined { font-size: 20px; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1; }
+        
+        /* Material 3 Tabs */
+        .tab-active { background-color: #C2E7FF; color: #001D35; font-weight: 500; border-radius: 9999px; }
+        .tab-inactive { color: #444746; font-weight: 500; border-radius: 9999px; }
+        .tab-inactive:hover { background-color: #1F1F1F14; }
+        
+        /* Material 3 Card */
+        .m3-card { background-color: #FFFFFF; border: 1px solid #C7C7C7; border-radius: 12px; }
+        
+        /* Material 3 Primary Button */
+        .btn-primary { background-color: #0B57D0; color: #FFFFFF; border-radius: 9999px; font-weight: 500; padding: 10px 24px; transition: background-color 0.2s; }
+        .btn-primary:hover { background-color: #0842A0; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        
+        /* Material 3 Outlined Button */
+        .btn-outlined { background-color: transparent; border: 1px solid #747775; color: #0B57D0; border-radius: 9999px; font-weight: 500; padding: 10px 24px; transition: background-color 0.2s; }
+        .btn-outlined:hover { background-color: #0B57D014; }
+    </style>
 </head>
-<body class="bg-[#F8F9FA] text-[#202124] min-h-screen relative overflow-x-hidden">
+<body class="bg-[#F3F6FC] text-[#1F1F1F] min-h-screen relative overflow-x-hidden">
     
 
     <div class="relative z-10 w-full">
         <!-- Header -->
-        <header class="flex flex-col md:flex-row md:items-center md:justify-between bg-white px-6 py-3 border-b border-[#DADCE0] p-4 gap-4 bg-white border-b border-[#DADCE0] w-full flex items-center justify-between shadow-sm">
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between bg-[#F3F6FC] px-6 py-4 p-4 gap-4 bg-white border-b border-[#DADCE0] w-full flex items-center justify-between shadow-sm">
             <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-lg bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 flex items-center justify-center shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]  text-[#202124]">
-                    <i data-lucide="shield" class="w-7 h-7 stroke-[2.5]"></i>
+                <div class="w-12 h-12 rounded-lg bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 flex items-center justify-center shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]  text-[#1F1F1F]">
+                    <span class="material-symbols-outlined   stroke-[2.5]">security</span>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-extrabold tracking-tight text-[#202124] flex items-center gap-3">
+                    <h1 class="text-2xl font-extrabold tracking-tight text-[#1F1F1F] flex items-center gap-3">
                         Cheezer Core <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/20 font-mono font-semibold tracking-wide">v0.1.0 • Control Plane</span>
                     </h1>
-                    <p class="text-xs text-[#5F6368] mt-0.5">Autonomous Kubernetes Self-Healing Engine & Reliability Control Plane</p>
+                    <p class="text-xs text-[#444746] mt-0.5">Autonomous Kubernetes Self-Healing Engine & Reliability Control Plane</p>
                 </div>
             </div>
             <div class="flex items-center space-x-3">
                 <button id="kill-switch-btn" onclick="toggleKillSwitch()" class="flex items-center space-x-2 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition cursor-pointer shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-emerald-500/10">
                     <span id="kill-switch-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <i data-lucide="power" class="w-3.5 h-3.5"></i>
+                    <span class="material-symbols-outlined  ">power</span>
                     <span id="kill-switch-text">ENGINE ACTIVE</span>
                 </button>
-                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-lg text-xs font-mono text-[#5F6368] ">
-                    <i data-lucide="activity" class="w-3.5 h-3.5 text-[#1E8E3E] animate-pulse"></i>
+                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-lg text-xs font-mono text-[#444746] ">
+                    <span class="material-symbols-outlined   text-[#1E8E3E] animate-pulse">monitoring</span>
                     <span>WATCHDOG ACTIVE</span>
                 </div>
-                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-lg text-xs font-mono text-[#5F6368] ">
-                    <i data-lucide="lock" class="w-3.5 h-3.5 text-[#1A73E8]"></i>
+                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-lg text-xs font-mono text-[#444746] ">
+                    <span class="material-symbols-outlined   text-[#0B57D0]">lock</span>
                     <span>OPA FAIL-CLOSED</span>
                 </div>
             </div>
@@ -887,28 +914,28 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         <!-- Navigation Tab Bar -->
         <nav class="flex flex-wrap items-center space-x-2 my-6 border-b border-[#DADCE0]/80 pb-3 gap-y-2">
             <a id="tab-btn-incidents" href="/incidents" onclick="switchTab('incidents'); return false;" class="__TAB_BTN_CLASS_INCIDENTS__">
-                <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                <span class="material-symbols-outlined  ">shield-alert</span>
                 <span>Live Incidents & Circuit Breakers</span>
             </a>
             <a id="tab-btn-connections" href="/connections" onclick="switchTab('connections'); return false;" class="__TAB_BTN_CLASS_CONNECTIONS__">
-                <i data-lucide="link" class="w-4 h-4"></i>
+                <span class="material-symbols-outlined  ">link</span>
                 <span>Connections</span>
             </a>
             <a id="tab-btn-metrics" href="/monitor" onclick="switchTab('metrics'); return false;" class="__TAB_BTN_CLASS_METRICS__">
-                <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+                <span class="material-symbols-outlined  ">bar-chart-2</span>
                 <span>Monitor</span>
             </a>
             <a id="tab-btn-logs" href="/logs" onclick="switchTab('logs'); return false;" class="__TAB_BTN_CLASS_LOGS__">
-                <i data-lucide="terminal" class="w-4 h-4"></i>
+                <span class="material-symbols-outlined  ">terminal</span>
                 <span>Real-Time Logs</span>
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             </a>
             <a id="tab-btn-history" href="/history" onclick="switchTab('history'); return false;" class="__TAB_BTN_CLASS_HISTORY__">
-                <i data-lucide="history" class="w-4 h-4"></i>
+                <span class="material-symbols-outlined  ">history</span>
                 <span>Audit History</span>
             </a>
             <a id="tab-btn-settings" href="/settings" onclick="switchTab('settings'); return false;" class="__TAB_BTN_CLASS_SETTINGS__">
-                <i data-lucide="settings" class="w-4 h-4"></i>
+                <span class="material-symbols-outlined  ">settings</span>
                 <span>Settings</span>
             </a>
         </nav>
@@ -917,30 +944,30 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         <div id="tab-content-incidents" class="__TAB_CONTENT_CLASS_INCIDENTS__">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpi-grid">
                 <div class=" rounded-lg p-5 ">
-                    <div class="flex items-center justify-between text-xs font-medium text-[#5F6368] uppercase tracking-wider">
+                    <div class="flex items-center justify-between text-xs font-medium text-[#444746] uppercase tracking-wider">
                         <span>Total Incidents</span>
-                        <i data-lucide="layers" class="w-4 h-4 text-[#80868B]"></i>
+                        <span class="material-symbols-outlined   text-[#80868B]">layers</span>
                     </div>
-                    <div class="text-3xl font-extrabold text-[#202124] mt-2 font-mono" id="kpi-total">0</div>
+                    <div class="text-3xl font-extrabold text-[#1F1F1F] mt-2 font-mono" id="kpi-total">0</div>
                 </div>
                 <div class=" rounded-lg p-5 ">
-                    <div class="flex items-center justify-between text-xs font-medium text-[#5F6368] uppercase tracking-wider">
+                    <div class="flex items-center justify-between text-xs font-medium text-[#444746] uppercase tracking-wider">
                         <span>Self-Remediated</span>
-                        <i data-lucide="check-circle-2" class="w-4 h-4 text-[#1E8E3E]"></i>
+                        <span class="material-symbols-outlined   text-[#1E8E3E]">check-circle-2</span>
                     </div>
                     <div class="text-3xl font-extrabold text-[#1E8E3E] mt-2 font-mono" id="kpi-executed">0</div>
                 </div>
                 <div class="bg-white border-[#DADCE0] rounded-lg p-5 ">
-                    <div class="flex items-center justify-between text-sm font-medium text-[#202124]">
+                    <div class="flex items-center justify-between text-sm font-medium text-[#1F1F1F]">
                         <span>Requires Approval</span>
-                        <i data-lucide="alert-triangle" class="w-4 h-4 text-[#1A73E8] animate-pulse"></i>
+                        <span class="material-symbols-outlined   text-[#0B57D0] animate-pulse">warning</span>
                     </div>
-                    <div class="text-3xl font-extrabold text-[#1A73E8] mt-2 font-mono" id="kpi-approval">0</div>
+                    <div class="text-3xl font-extrabold text-[#0B57D0] mt-2 font-mono" id="kpi-approval">0</div>
                 </div>
                 <div class=" rounded-lg p-5 ">
-                    <div class="flex items-center justify-between text-xs font-medium text-[#5F6368] uppercase tracking-wider">
+                    <div class="flex items-center justify-between text-xs font-medium text-[#444746] uppercase tracking-wider">
                         <span>OPA Denials / Blocked</span>
-                        <i data-lucide="shield-ban" class="w-4 h-4 text-[#D93025]"></i>
+                        <span class="material-symbols-outlined   text-[#D93025]">shield-ban</span>
                     </div>
                     <div class="text-3xl font-extrabold text-[#D93025] mt-2 font-mono" id="kpi-blocked">0</div>
                 </div>
@@ -949,14 +976,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             <section class=" rounded-lg p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                            <i data-lucide="rss" class="w-4 h-4 text-[#1A73E8]"></i>
+                        <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                            <span class="material-symbols-outlined   text-[#0B57D0]">rss</span>
                             Live Incident Stream & Circuit Breakers
                         </h2>
-                        <p class="text-xs text-[#5F6368] mt-0.5">Real-time audit log of rule evaluations, LLM escalations, and human intervention locks</p>
+                        <p class="text-xs text-[#444746] mt-0.5">Real-time audit log of rule evaluations, LLM escalations, and human intervention locks</p>
                     </div>
-                    <button onclick="fetchIncidents()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                    <button onclick="fetchIncidents()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                        <span class="material-symbols-outlined  ">rotate-cw</span>
                         <span>Refresh Stream</span>
                     </button>
                 </div>
@@ -964,7 +991,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="text-[11px] font-mono uppercase tracking-wider text-[#5F6368] border-b border-[#DADCE0] bg-[#F8F9FA]/60">
+                            <tr class="text-[11px] font-mono uppercase tracking-wider text-[#444746] border-b border-[#DADCE0] bg-[#F3F6FC]/60">
                                 <th class="py-3 px-4">ID</th>
                                 <th class="py-3 px-4">Timestamp</th>
                                 <th class="py-3 px-4">Signature / Alert</th>
@@ -991,14 +1018,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             <section class=" rounded-lg p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                            <i data-lucide="link" class="w-4 h-4 text-[#1A73E8]"></i>
+                        <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                            <span class="material-symbols-outlined   text-[#0B57D0]">link</span>
                             Cloud & Platform Auth Gateways
                         </h2>
-                        <p class="text-xs text-[#5F6368] mt-0.5">Manage credentials for Kubernetes, Vercel, GitHub, Render, AWS, and GCloud</p>
+                        <p class="text-xs text-[#444746] mt-0.5">Manage credentials for Kubernetes, Vercel, GitHub, Render, AWS, and GCloud</p>
                     </div>
-                    <button onclick="fetchConnections()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                    <button onclick="fetchConnections()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                        <span class="material-symbols-outlined  ">rotate-cw</span>
                         <span>Refresh Connections</span>
                     </button>
                 </div>
@@ -1012,14 +1039,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             <section class=" rounded-lg p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                            <i data-lucide="eye" class="w-4 h-4 text-[#9333EA]"></i>
+                        <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                            <span class="material-symbols-outlined   text-[#9333EA]">eye</span>
                             Monitored Workloads & Watcher Engine
                         </h2>
-                        <p class="text-xs text-[#5F6368] mt-0.5">Active software, websites, and backend services watched across Vercel, K8s, AWS & GCloud</p>
+                        <p class="text-xs text-[#444746] mt-0.5">Active software, websites, and backend services watched across Vercel, K8s, AWS & GCloud</p>
                     </div>
-                    <button onclick="openAddWatcherModal()" class="text-xs font-mono font-bold bg-[#1A73E8] hover:bg-[#174EA6] text-[#202124] px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] ">
-                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <button onclick="openAddWatcherModal()" class="text-xs font-mono font-bold bg-[#0B57D0] hover:bg-[#174EA6] text-[#1F1F1F] px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] ">
+                        <span class="material-symbols-outlined  ">plus-circle</span>
                         <span>+ Add Monitored Target</span>
                     </button>
                 </div>
@@ -1031,30 +1058,30 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- MODAL: ADD MONITORED TARGET -->
-        <div id="add-watcher-modal" class="fixed inset-0 z-50 bg-[#F8F9FA]/80 -sm hidden items-center justify-center p-4">
+        <div id="add-watcher-modal" class="fixed inset-0 z-50 bg-[#F3F6FC]/80 -sm hidden items-center justify-center p-4">
             <div class=" rounded-lg p-6 max-w-lg w-full border border-[#DADCE0] shadow-2xl space-y-5">
                 <div class="flex items-center justify-between pb-3 border-b border-[#DADCE0]">
-                    <h3 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                        <i data-lucide="shield-plus" class="w-5 h-5 text-[#1A73E8]"></i>
+                    <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                        <span class="material-symbols-outlined   text-[#0B57D0]">shield-plus</span>
                         Add Monitored Workload Target
                     </h3>
-                    <button onclick="closeAddWatcherModal()" class="text-[#5F6368] hover:text-[#202124]">
-                        <i data-lucide="x" class="w-5 h-5"></i>
+                    <button onclick="closeAddWatcherModal()" class="text-[#444746] hover:text-[#1F1F1F]">
+                        <span class="material-symbols-outlined  ">x</span>
                     </button>
                 </div>
 
                 <div class="space-y-4 text-xs font-mono">
                     <div>
-                        <label class="block text-[#5F6368] mb-1 font-bold">Target Name</label>
+                        <label class="block text-[#444746] mb-1 font-bold">Target Name</label>
                         <input type="text" id="watcher-name-input" placeholder="e.g. Production E-Commerce Web / API" 
-                               class="w-full bg-[#F8F9FA] text-[#202124] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50">
+                               class="w-full bg-[#F3F6FC] text-[#1F1F1F] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50">
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[#5F6368] mb-1 font-bold">Cloud Provider</label>
+                            <label class="block text-[#444746] mb-1 font-bold">Cloud Provider</label>
                             <select id="watcher-provider-select" onchange="onProviderSelectChange()" 
-                                    class="w-full bg-[#F8F9FA] text-[#202124] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50">
+                                    class="w-full bg-[#F3F6FC] text-[#1F1F1F] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50">
                                 <option value="vercel">Vercel Deployment</option>
                                 <option value="k8s">Kubernetes Cluster</option>
                                 <option value="aws">AWS Cloud (ECS/S3)</option>
@@ -1067,35 +1094,35 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[#5F6368] mb-1 font-bold">Discovered Workload</label>
+                            <label class="block text-[#444746] mb-1 font-bold">Discovered Workload</label>
                             <select id="watcher-workload-select" 
-                                    class="w-full bg-[#F8F9FA] text-[#202124] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50">
+                                    class="w-full bg-[#F3F6FC] text-[#1F1F1F] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50">
                                 <option>Loading projects...</option>
                             </select>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-[#5F6368] mb-1 font-bold">Source Code Repository (GitHub)</label>
+                        <label class="block text-[#444746] mb-1 font-bold">Source Code Repository (GitHub)</label>
                         <select id="watcher-repo-select" 
-                                class="w-full bg-[#F8F9FA] text-[#202124] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50">
+                                class="w-full bg-[#F3F6FC] text-[#1F1F1F] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50">
                             <option value="ziuus/cheezer">ziuus/cheezer</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-[#5F6368] mb-1 font-bold">Custom Watcher Playbook & Instructions</label>
+                        <label class="block text-[#444746] mb-1 font-bold">Custom Watcher Playbook & Instructions</label>
                         <textarea id="watcher-instructions-input" rows="3" placeholder="e.g. If 5xx error rate > 5% or OOM crash loop occurs, restart deployment, open GitHub PR for memory ceiling, and notify Slack."
-                                  class="w-full bg-[#F8F9FA] text-[#202124] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50"></textarea>
+                                  class="w-full bg-[#F3F6FC] text-[#1F1F1F] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50"></textarea>
                     </div>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-3 border-t border-[#DADCE0]">
-                    <button onclick="closeAddWatcherModal()" class="px-4 py-2 rounded-lg text-xs font-mono bg-[#F1F3F4] text-[#5F6368] hover:bg-[#F8F9FA] transition">
+                    <button onclick="closeAddWatcherModal()" class="px-4 py-2 rounded-lg text-xs font-mono bg-[#F1F3F4] text-[#444746] hover:bg-[#F3F6FC] transition">
                         Cancel
                     </button>
-                    <button onclick="saveWatcher()" class="px-4 py-2 rounded-lg text-xs font-mono font-bold bg-[#1A73E8] hover:bg-[#174EA6] text-[#202124] transition flex items-center gap-1.5">
-                        <i data-lucide="check" class="w-4 h-4"></i>
+                    <button onclick="saveWatcher()" class="px-4 py-2 rounded-lg text-xs font-mono font-bold bg-[#0B57D0] hover:bg-[#174EA6] text-[#1F1F1F] transition flex items-center gap-1.5">
+                        <span class="material-symbols-outlined  ">check</span>
                         <span>Start Watching</span>
                     </button>
                 </div>
@@ -1103,15 +1130,15 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- MODAL: INCIDENT DOCUMENTATION & AUDIT INSPECTOR -->
-        <div id="incident-doc-modal" class="fixed inset-0 z-50 bg-[#F8F9FA]/80 -sm hidden items-center justify-center p-4">
+        <div id="incident-doc-modal" class="fixed inset-0 z-50 bg-[#F3F6FC]/80 -sm hidden items-center justify-center p-4">
             <div class=" rounded-lg p-6 max-w-2xl w-full border border-[#DADCE0] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between pb-3 border-b border-[#DADCE0]">
-                    <h3 class="text-base font-bold text-[#202124] flex items-center gap-2" id="doc-modal-title">
-                        <i data-lucide="file-text" class="w-5 h-5 text-[#1A73E8]"></i>
+                    <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2" id="doc-modal-title">
+                        <span class="material-symbols-outlined   text-[#0B57D0]">file-text</span>
                         Incident Documentation & Telemetry Archive
                     </h3>
-                    <button onclick="closeIncidentDocModal()" class="text-[#5F6368] hover:text-[#202124]">
-                        <i data-lucide="x" class="w-5 h-5"></i>
+                    <button onclick="closeIncidentDocModal()" class="text-[#444746] hover:text-[#1F1F1F]">
+                        <span class="material-symbols-outlined  ">x</span>
                     </button>
                 </div>
 
@@ -1120,7 +1147,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-3 border-t border-[#DADCE0]">
-                    <button onclick="closeIncidentDocModal()" class="px-4 py-2 rounded-lg text-xs font-mono bg-[#F1F3F4] text-[#5F6368] hover:bg-[#F8F9FA] transition">
+                    <button onclick="closeIncidentDocModal()" class="px-4 py-2 rounded-lg text-xs font-mono bg-[#F1F3F4] text-[#444746] hover:bg-[#F3F6FC] transition">
                         Close Inspector
                     </button>
                 </div>
@@ -1131,42 +1158,42 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         <div id="tab-content-metrics" class="__TAB_CONTENT_CLASS_METRICS__">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class=" rounded-lg p-6 ">
-                    <div class="flex items-center justify-between text-xs font-semibold text-[#5F6368] uppercase tracking-wider">
+                    <div class="flex items-center justify-between text-xs font-semibold text-[#444746] uppercase tracking-wider">
                         <span>Self-Healing Success Rate</span>
-                        <i data-lucide="check-check" class="w-4 h-4 text-[#1E8E3E]"></i>
+                        <span class="material-symbols-outlined   text-[#1E8E3E]">check-check</span>
                     </div>
                     <div class="text-4xl font-extrabold text-[#1E8E3E] mt-3 font-mono" id="metric-success-rate">0%</div>
                     <div class="w-full bg-white h-2 rounded-full mt-4 overflow-hidden">
                         <div id="metric-success-bar" class="bg-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
-                    <p class="text-xs text-[#5F6368] mt-3">Verified incident recoveries without manual engineering intervention</p>
+                    <p class="text-xs text-[#444746] mt-3">Verified incident recoveries without manual engineering intervention</p>
                 </div>
 
                 <div class=" rounded-lg p-6 ">
-                    <div class="flex items-center justify-between text-xs font-semibold text-[#5F6368] uppercase tracking-wider">
+                    <div class="flex items-center justify-between text-xs font-semibold text-[#444746] uppercase tracking-wider">
                         <span>Triage Path Breakdown</span>
-                        <i data-lucide="git-fork" class="w-4 h-4 text-[#9333EA]"></i>
+                        <span class="material-symbols-outlined   text-[#9333EA]">git-fork</span>
                     </div>
                     <div class="flex items-center justify-between mt-4">
                         <div>
-                            <span class="text-2xl font-bold text-[#1A73E8] font-mono" id="metric-rule-percent">0%</span>
-                            <span class="text-xs text-[#5F6368] block font-mono mt-0.5">⚡ Rule Fast-Path</span>
+                            <span class="text-2xl font-bold text-[#0B57D0] font-mono" id="metric-rule-percent">0%</span>
+                            <span class="text-xs text-[#444746] block font-mono mt-0.5">⚡ Rule Fast-Path</span>
                         </div>
                         <div class="text-right">
                             <span class="text-2xl font-bold text-[#9333EA] font-mono" id="metric-ai-percent">0%</span>
-                            <span class="text-xs text-[#5F6368] block font-mono mt-0.5">🤖 AI Escalation</span>
+                            <span class="text-xs text-[#444746] block font-mono mt-0.5">🤖 AI Escalation</span>
                         </div>
                     </div>
-                    <p class="text-xs text-[#5F6368] mt-4">Known faults execute sub-100ms with zero AI token cost</p>
+                    <p class="text-xs text-[#444746] mt-4">Known faults execute sub-100ms with zero AI token cost</p>
                 </div>
 
                 <div class=" rounded-lg p-6 ">
-                    <div class="flex items-center justify-between text-xs font-semibold text-[#5F6368] uppercase tracking-wider">
+                    <div class="flex items-center justify-between text-xs font-semibold text-[#444746] uppercase tracking-wider">
                         <span>OPA Policy Enforcement</span>
-                        <i data-lucide="shield-check" class="w-4 h-4 text-[#1A73E8]"></i>
+                        <span class="material-symbols-outlined   text-[#0B57D0]">security</span>
                     </div>
-                    <div class="text-xl font-bold text-[#1A73E8] mt-3 font-mono" id="metric-opa-status">ENFORCED (100%)</div>
-                    <p class="text-xs text-[#5F6368] mt-4">Fail-closed DENY default for unauthorized or dangerous mutations</p>
+                    <div class="text-xl font-bold text-[#0B57D0] mt-3 font-mono" id="metric-opa-status">ENFORCED (100%)</div>
+                    <p class="text-xs text-[#444746] mt-4">Fail-closed DENY default for unauthorized or dangerous mutations</p>
                 </div>
             </div>
 
@@ -1174,14 +1201,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             <section class=" rounded-lg p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h3 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                            <i data-lucide="activity" class="w-4 h-4 text-[#1E8E3E]"></i>
+                        <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                            <span class="material-symbols-outlined   text-[#1E8E3E]">monitoring</span>
                             Active Process Telemetry & Live Workload Metrics
                         </h3>
-                        <p class="text-xs text-[#5F6368] mt-0.5">Live CPU, Memory, Throughput, and Error Rate metrics across watched systems</p>
+                        <p class="text-xs text-[#444746] mt-0.5">Live CPU, Memory, Throughput, and Error Rate metrics across watched systems</p>
                     </div>
-                    <button onclick="fetchMetrics()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                    <button onclick="fetchMetrics()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                        <span class="material-symbols-outlined  ">rotate-cw</span>
                         <span>Refresh Telemetry</span>
                     </button>
                 </div>
@@ -1195,11 +1222,11 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             <section class=" rounded-lg p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h3 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                            <i data-lucide="wifi" class="w-4 h-4 text-[#1A73E8]"></i>
+                        <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                            <span class="material-symbols-outlined   text-[#0B57D0]">wifi</span>
                             Cloud Gateway Latency & Auth Connection Matrix
                         </h3>
-                        <p class="text-xs text-[#5F6368] mt-0.5">Real-time ping latency and credentials verification for connected cloud APIs</p>
+                        <p class="text-xs text-[#444746] mt-0.5">Real-time ping latency and credentials verification for connected cloud APIs</p>
                     </div>
                     <span class="text-xs font-mono text-[#1E8E3E] bg-[#1E8E3E]/10 px-2.5 py-1 rounded-full border border-[#1E8E3E]/20">6 GATEWAYS ACTIVE</span>
                 </div>
@@ -1211,26 +1238,26 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
             <!-- Benchmarks -->
             <section class=" rounded-lg p-6 shadow-xl">
-                <h3 class="text-base font-bold text-[#202124] mb-4 pb-3 border-b border-[#DADCE0]/80 flex items-center gap-2">
-                    <i data-lucide="cpu" class="w-4 h-4 text-[#1A73E8]"></i>
+                <h3 class="text-base font-bold text-[#1F1F1F] mb-4 pb-3 border-b border-[#DADCE0]/80 flex items-center gap-2">
+                    <span class="material-symbols-outlined   text-[#0B57D0]">memory</span>
                     Engine Latency & Cloud Synchronization Benchmarks
                 </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
-                        <div class="text-[11px] text-[#5F6368] font-mono uppercase">Rule Fast-Path Latency</div>
-                        <div class="text-xl font-bold text-[#1A73E8] mt-1 font-mono" id="metric-rule-latency">< 50ms</div>
+                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
+                        <div class="text-[11px] text-[#444746] font-mono uppercase">Rule Fast-Path Latency</div>
+                        <div class="text-xl font-bold text-[#0B57D0] mt-1 font-mono" id="metric-rule-latency">< 50ms</div>
                     </div>
-                    <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
-                        <div class="text-[11px] text-[#5F6368] font-mono uppercase">NVIDIA NIM LLM Latency</div>
+                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
+                        <div class="text-[11px] text-[#444746] font-mono uppercase">NVIDIA NIM LLM Latency</div>
                         <div class="text-xl font-bold text-[#9333EA] mt-1 font-mono" id="metric-ai-latency">1.2s</div>
                     </div>
-                    <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
-                        <div class="text-[11px] text-[#5F6368] font-mono uppercase">TOCTOU Revalidation Time</div>
+                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
+                        <div class="text-[11px] text-[#444746] font-mono uppercase">TOCTOU Revalidation Time</div>
                         <div class="text-xl font-bold text-[#1E8E3E] mt-1 font-mono" id="metric-toctou-latency">12ms</div>
                     </div>
-                    <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
-                        <div class="text-[11px] text-[#5F6368] font-mono uppercase">Floci AWS Cloud Sync</div>
-                        <div class="text-xs font-bold text-[#1A73E8] mt-2 truncate font-mono" id="metric-floci-sync">Connected (http://172.18.100.41:4566)</div>
+                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-4 rounded-lg">
+                        <div class="text-[11px] text-[#444746] font-mono uppercase">Floci AWS Cloud Sync</div>
+                        <div class="text-xs font-bold text-[#0B57D0] mt-2 truncate font-mono" id="metric-floci-sync">Connected (http://172.18.100.41:4566)</div>
                     </div>
                 </div>
             </section>
@@ -1241,25 +1268,25 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             <section class=" rounded-lg p-6 shadow-xl">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 mb-4 border-b border-[#DADCE0]/80 gap-4">
                     <div>
-                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                            <i data-lucide="terminal" class="w-4 h-4 text-[#1E8E3E]"></i>
+                        <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                            <span class="material-symbols-outlined   text-[#1E8E3E]">terminal</span>
                             Real-Time Engine & Telemetry Log Console
                         </h2>
-                        <p class="text-xs text-[#5F6368] mt-0.5">Streaming triage logs, OPA authorization checks, and Kubernetes mutation traces</p>
+                        <p class="text-xs text-[#444746] mt-0.5">Streaming triage logs, OPA authorization checks, and Kubernetes mutation traces</p>
                     </div>
                     <div class="flex items-center space-x-3">
                         <div class="relative">
-                            <i data-lucide="search" class="w-3.5 h-3.5 text-[#80868B] absolute left-3 top-2.5"></i>
-                            <input type="text" id="log-search" onkeyup="filterLogs()" placeholder="Search logs (e.g. OPA, CrashLoop)..." class="bg-[#F8F9FA] border border-[#DADCE0] text-xs text-[#202124] pl-8 pr-3 py-1.5 rounded-lg focus:outline-none focus:border-[#1A73E8] w-64 font-mono">
+                            <span class="material-symbols-outlined   text-[#80868B] absolute left-3 top-2.5">search</span>
+                            <input type="text" id="log-search" onkeyup="filterLogs()" placeholder="Search logs (e.g. OPA, CrashLoop)..." class="bg-[#F3F6FC] border border-[#DADCE0] text-xs text-[#1F1F1F] pl-8 pr-3 py-1.5 rounded-lg focus:outline-none focus:border-[#1A73E8] w-64 font-mono">
                         </div>
-                        <button onclick="fetchLogs()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                        <button onclick="fetchLogs()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                            <span class="material-symbols-outlined  ">rotate-cw</span>
                             <span>Refresh Logs</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="bg-[#F8F9FA] border border-[#DADCE0]/90 rounded-lg p-4 font-mono text-xs max-h-[600px] overflow-y-auto space-y-1.5 shadow-inner" id="log-console">
+                <div class="bg-[#F3F6FC] border border-[#DADCE0]/90 rounded-lg p-4 font-mono text-xs max-h-[600px] overflow-y-auto space-y-1.5 shadow-inner" id="log-console">
                     <div class="text-[#80868B] italic">Streaming logs...</div>
                 </div>
             </section>
@@ -1270,14 +1297,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             <section class=" rounded-lg p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                            <i data-lucide="history" class="w-4 h-4 text-[#9333EA]"></i>
+                        <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                            <span class="material-symbols-outlined   text-[#9333EA]">history</span>
                             Complete Historical Incident Audit Trail
                         </h2>
-                        <p class="text-xs text-[#5F6368] mt-0.5">Filterable historical database of all evaluated alerts, actions, and verification records</p>
+                        <p class="text-xs text-[#444746] mt-0.5">Filterable historical database of all evaluated alerts, actions, and verification records</p>
                     </div>
-                    <button onclick="fetchHistory()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                    <button onclick="fetchHistory()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                        <span class="material-symbols-outlined  ">rotate-cw</span>
                         <span>Reload History</span>
                     </button>
                 </div>
@@ -1285,7 +1312,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="text-[11px] font-mono uppercase tracking-wider text-[#5F6368] border-b border-[#DADCE0] bg-[#F8F9FA]/60">
+                            <tr class="text-[11px] font-mono uppercase tracking-wider text-[#444746] border-b border-[#DADCE0] bg-[#F3F6FC]/60">
                                 <th class="py-3 px-4">ID</th>
                                 <th class="py-3 px-4">Timestamp</th>
                                 <th class="py-3 px-4">Alert Signature</th>
@@ -1307,61 +1334,61 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         <div id="tab-content-settings" class="__TAB_CONTENT_CLASS_SETTINGS__">
             <section class=" rounded-lg p-6 shadow-xl max-w-3xl">
                 <div class="pb-4 mb-6 border-b border-[#DADCE0]/80">
-                    <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
-                        <i data-lucide="settings" class="w-4 h-4 text-[#1A73E8]"></i>
+                    <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
+                        <span class="material-symbols-outlined   text-[#0B57D0]">settings</span>
                         Control Plane Engine Settings
                     </h2>
-                    <p class="text-xs text-[#5F6368] mt-0.5">Configure Neural Network Models, API Keys, OPA Endpoints, and Floci AWS Outbound Webhooks</p>
+                    <p class="text-xs text-[#444746] mt-0.5">Configure Neural Network Models, API Keys, OPA Endpoints, and Floci AWS Outbound Webhooks</p>
                 </div>
 
                 <form onsubmit="saveSettings(event)" class="space-y-5">
                     <div>
                         <label class="block text-xs font-mono text-[#9333EA] font-bold uppercase mb-1 flex items-center gap-1.5">
-                            <i data-lucide="bot" class="w-3.5 h-3.5"></i> Devin AI Autonomous Engineer API Key
+                            <span class="material-symbols-outlined  ">smart_toy</span> Devin AI Autonomous Engineer API Key
                         </label>
-                        <input type="password" id="setting-devin-key" placeholder="Paste your Devin API Token (from app.devin.ai/settings)..." class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
+                        <input type="password" id="setting-devin-key" placeholder="Paste your Devin API Token (from app.devin.ai/settings)..." class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-mono text-[#1A73E8] font-bold uppercase mb-1 flex items-center gap-1.5">
-                            <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub Personal Access Token (PAT)
+                        <label class="block text-xs font-mono text-[#0B57D0] font-bold uppercase mb-1 flex items-center gap-1.5">
+                            <span class="material-symbols-outlined  ">github</span> GitHub Personal Access Token (PAT)
                         </label>
-                        <input type="password" id="setting-github-token" placeholder="Paste GitHub PAT (repo, workflow scope)..." class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
+                        <input type="password" id="setting-github-token" placeholder="Paste GitHub PAT (repo, workflow scope)..." class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-mono text-[#1A73E8] font-bold uppercase mb-1 flex items-center gap-1.5">
-                                <i data-lucide="globe" class="w-3.5 h-3.5"></i> Vercel Platform Token
+                            <label class="block text-xs font-mono text-[#0B57D0] font-bold uppercase mb-1 flex items-center gap-1.5">
+                                <span class="material-symbols-outlined  ">globe</span> Vercel Platform Token
                             </label>
-                            <input type="password" id="setting-vercel-token" placeholder="Paste Vercel API Token..." class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
+                            <input type="password" id="setting-vercel-token" placeholder="Paste Vercel API Token..." class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                         </div>
                         <div>
                             <label class="block text-xs font-mono text-[#1E8E3E] font-bold uppercase mb-1 flex items-center gap-1.5">
-                                <i data-lucide="layers" class="w-3.5 h-3.5"></i> Render API Token
+                                <span class="material-symbols-outlined  ">layers</span> Render API Token
                             </label>
-                            <input type="password" id="setting-render-token" placeholder="Paste Render API Token..." class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
+                            <input type="password" id="setting-render-token" placeholder="Paste Render API Token..." class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                         </div>
                     </div>
 
                     <div class="pt-2 border-t border-[#DADCE0]/80">
-                        <label class="block text-xs font-mono text-[#5F6368] uppercase mb-1">NVIDIA NIM LLM Model String</label>
-                        <input type="text" id="setting-llm-model" class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
+                        <label class="block text-xs font-mono text-[#444746] uppercase mb-1">NVIDIA NIM LLM Model String</label>
+                        <input type="text" id="setting-llm-model" class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-mono text-[#5F6368] uppercase mb-1">OPA Fail-Closed Policy Endpoint</label>
-                        <input type="text" id="setting-opa-url" class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
+                        <label class="block text-xs font-mono text-[#444746] uppercase mb-1">OPA Fail-Closed Policy Endpoint</label>
+                        <input type="text" id="setting-opa-url" class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-mono text-[#5F6368] uppercase mb-1">Notification Webhook / Floci SQS URL</label>
-                        <input type="text" id="setting-webhook-url" class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
+                        <label class="block text-xs font-mono text-[#444746] uppercase mb-1">Notification Webhook / Floci SQS URL</label>
+                        <input type="text" id="setting-webhook-url" class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                     </div>
 
                     <div class="pt-4 flex justify-end">
-                        <button type="submit" class="bg-[#1A73E8] hover:bg-[#174EA6] text-white font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]  flex items-center gap-2">
-                            <i data-lucide="save" class="w-4 h-4"></i>
+                        <button type="submit" class="btn-primary flex items-center gap-2 font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]  flex items-center gap-2">
+                            <span class="material-symbols-outlined  ">save</span>
                             <span>Save Global Configuration</span>
                         </button>
                     </div>
@@ -1375,7 +1402,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         function initLucideIcons() {
             if (window.lucide) {
-                window.lucide.createIcons();
+                window.
             }
         }
 
@@ -1395,13 +1422,13 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 const content = document.getElementById(`tab-content-${t}`);
                 const btn = document.getElementById(`tab-btn-${t}`);
                 if (content) content.classList.add('hidden');
-                if (btn) btn.className = "px-4 py-2 rounded-lg text-xs font-semibold transition text-[#5F6368] hover:text-[#202124] hover:bg-white/60 border border-transparent flex items-center space-x-2";
+                if (btn) btn.className = "px-4 py-2 rounded-lg text-xs font-semibold transition text-[#444746] hover:text-[#1F1F1F] hover:bg-white/60 border border-transparent flex items-center space-x-2";
             });
 
             const activeContent = document.getElementById(`tab-content-${tab}`);
             const activeBtn = document.getElementById(`tab-btn-${tab}`);
             if (activeContent) activeContent.classList.remove('hidden');
-            if (activeBtn) activeBtn.className = "tab-active px-4 py-2 rounded-lg text-xs font-semibold transition border flex items-center space-x-2";
+            if (activeBtn) activeBtn.className = "tab-active px-5 py-2 flex items-center space-x-2";
 
             if (tab === 'incidents') fetchIncidents();
             if (tab === 'logs') fetchLogs();
@@ -1537,7 +1564,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             if (list.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8 text-[#80868B] font-mono text-xs border border-dashed border-[#DADCE0] rounded-lg">
-                        No custom monitored targets configured yet. Click <strong class="text-[#1A73E8] cursor-pointer" onclick="openAddWatcherModal()">"+ Add Monitored Target"</strong> above to watch your Vercel, K8s, AWS, or GCloud workloads.
+                        No custom monitored targets configured yet. Click <strong class="text-[#0B57D0] cursor-pointer" onclick="openAddWatcherModal()">"+ Add Monitored Target"</strong> above to watch your Vercel, K8s, AWS, or GCloud workloads.
                     </div>
                 `;
                 return;
@@ -1546,9 +1573,9 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             let html = '';
             for (const w of list) {
                 let providerBadge = 'bg-purple-500/10 text-[#9333EA] border-purple-500/20';
-                if (w.provider === 'vercel') providerBadge = 'bg-sky-500/10 text-[#1A73E8] border-sky-500/20';
-                if (w.provider === 'k8s') providerBadge = 'bg-blue-500/10 text-[#1A73E8] border-blue-500/20';
-                if (w.provider === 'aws') providerBadge = 'bg-transparent text-[#1A73E8] border-[#DADCE0]';
+                if (w.provider === 'vercel') providerBadge = 'bg-sky-500/10 text-[#0B57D0] border-sky-500/20';
+                if (w.provider === 'k8s') providerBadge = 'bg-blue-500/10 text-[#0B57D0] border-blue-500/20';
+                if (w.provider === 'aws') providerBadge = 'bg-transparent text-[#0B57D0] border-[#DADCE0]';
                 if (w.provider === 'gcloud') providerBadge = 'bg-[#1E8E3E]/10 text-[#1E8E3E] border-[#1E8E3E]/20';
 
                 html += `
@@ -1556,27 +1583,27 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         <div class="flex items-start justify-between">
                             <div>
                                 <div class="flex items-center space-x-2">
-                                    <span class="font-bold text-sm text-[#202124]">${w.name}</span>
+                                    <span class="font-bold text-sm text-[#1F1F1F]">${w.name}</span>
                                     <span class="text-[10px] font-mono px-2 py-0.5 rounded uppercase ${providerBadge}">${w.provider}</span>
                                     <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1E8E3E]/15 text-emerald-300 border border-[#1E8E3E]/30">${w.status}</span>
                                 </div>
-                                <span class="text-xs text-[#5F6368] font-mono block mt-1">Resource ID: ${w.external_id} • Env: ${w.environment}</span>
+                                <span class="text-xs text-[#444746] font-mono block mt-1">Resource ID: ${w.external_id} • Env: ${w.environment}</span>
                             </div>
-                            <button onclick="deleteWatcher(${w.id})" class="text-[#5F6368] hover:text-[#D93025] p-1.5 rounded-lg hover:bg-[#D93025]/10 transition">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            <button onclick="deleteWatcher(${w.id})" class="text-[#444746] hover:text-[#D93025] p-1.5 rounded-lg hover:bg-[#D93025]/10 transition">
+                                <span class="material-symbols-outlined  ">trash-2</span>
                             </button>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-2 border-t border-[#DADCE0]/60 font-mono">
-                            <div class="flex items-center space-x-1.5 text-[#5F6368]">
-                                <i data-lucide="github" class="w-3.5 h-3.5 text-[#1A73E8]"></i>
-                                <span class="text-[#5F6368]">GitOps Repo:</span>
-                                <span class="text-[#1A73E8] font-bold">${w.github_repo || 'ziuus/cheezer'}</span>
+                            <div class="flex items-center space-x-1.5 text-[#444746]">
+                                <span class="material-symbols-outlined   text-[#0B57D0]">github</span>
+                                <span class="text-[#444746]">GitOps Repo:</span>
+                                <span class="text-[#0B57D0] font-bold">${w.github_repo || 'ziuus/cheezer'}</span>
                             </div>
-                            <div class="flex items-center space-x-1.5 text-[#5F6368]">
-                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-[#9333EA]"></i>
-                                <span class="text-[#5F6368]">Playbook:</span>
-                                <span class="text-[#202124] truncate" title="${w.custom_instructions}">${w.custom_instructions}</span>
+                            <div class="flex items-center space-x-1.5 text-[#444746]">
+                                <span class="material-symbols-outlined   text-[#9333EA]">memory</span>
+                                <span class="text-[#444746]">Playbook:</span>
+                                <span class="text-[#1F1F1F] truncate" title="${w.custom_instructions}">${w.custom_instructions}</span>
                             </div>
                         </div>
                     </div>
@@ -1699,7 +1726,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 const isAuth = conn.status === 'AUTHENTICATED';
                 const isConfigured = conn.status === 'CONFIGURED' || conn.has_token;
 
-                let badgeClass = 'bg-[#F1F3F4] text-[#5F6368] border-[#E8EAED]';
+                let badgeClass = 'bg-[#F1F3F4] text-[#444746] border-[#E8EAED]';
                 let badgeText = conn.status;
                 if (isAuth) {
                     badgeClass = 'bg-[#1E8E3E]/20 text-emerald-300 border-emerald-500/40 font-bold';
@@ -1711,7 +1738,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                     badgeClass = 'bg-[#1E8E3E]/10 text-[#1E8E3E] border-[#1E8E3E]/20';
                     badgeText = 'HEALTHY';
                 } else if (conn.status === 'TIMEOUT') {
-                    badgeClass = 'bg-transparent text-[#1A73E8] border-[#DADCE0]';
+                    badgeClass = 'bg-transparent text-[#0B57D0] border-[#DADCE0]';
                     badgeText = 'TIMEOUT';
                 }
 
@@ -1727,30 +1754,30 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         <div class="flex items-start justify-between">
                             <div>
                                 <div class="flex items-center space-x-2">
-                                    <span class="font-bold text-sm text-[#202124]">${conn.name}</span>
+                                    <span class="font-bold text-sm text-[#1F1F1F]">${conn.name}</span>
                                     <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${badgeClass}">${badgeText}</span>
-                                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white text-[#5F6368] border border-[#DADCE0]">${conn.latency}</span>
+                                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#E3E3E3] text-[#1F1F1F] rounded-full border-0 px-3 py-1">${conn.latency}</span>
                                 </div>
-                                <span class="text-xs text-[#5F6368] font-mono block mt-1">${conn.type}</span>
+                                <span class="text-xs text-[#444746] font-mono block mt-1">${conn.type}</span>
                             </div>
-                            <button onclick="testConnection('${conn.name}')" class="text-xs font-mono bg-[#F1F3F4] hover:bg-[#F8F9FA] text-[#202124] px-3 py-1.5 rounded-lg border border-[#E8EAED] transition flex items-center gap-1.5">
-                                <i data-lucide="zap" class="w-3.5 h-3.5 text-[#1A73E8]"></i>
+                            <button onclick="testConnection('${conn.name}')" class="text-xs font-mono bg-[#F1F3F4] hover:bg-[#F3F6FC] text-[#1F1F1F] px-3 py-1.5 rounded-lg border border-[#E8EAED] transition flex items-center gap-1.5">
+                                <span class="material-symbols-outlined   text-[#0B57D0]">bolt</span>
                                 <span>Test Ping</span>
                             </button>
                         </div>
                         
                         <div class="pt-3 border-t border-[#DADCE0]/60 flex flex-col space-y-2">
                             <div class="flex items-center space-x-2">
-                                <span class="text-[11px] text-[#5F6368] font-mono w-16">Endpoint:</span>
+                                <span class="text-[11px] text-[#444746] font-mono w-16">Endpoint:</span>
                                 <input type="text" id="endpoint-input-${conn.service}" placeholder="e.g. ${conn.endpoint}" value="${conn.endpoint}"
-                                       class="flex-1 text-xs bg-[#F8F9FA]/80 text-[#202124] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50 font-mono">
+                                       class="flex-1 text-xs bg-[#F3F6FC]/80 text-[#1F1F1F] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50 font-mono">
                             </div>
                             <div class="flex items-center space-x-2">
-                                <span class="text-[11px] text-[#5F6368] font-mono w-16">Auth/Key:</span>
+                                <span class="text-[11px] text-[#444746] font-mono w-16">Auth/Key:</span>
                                 <input type="password" id="token-input-${conn.service}" placeholder="${inputPlaceholder}" 
-                                       class="flex-1 text-xs bg-[#F8F9FA]/80 text-[#202124] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50 font-mono">
-                                <button onclick="saveAndVerifyToken('${conn.service}', '${conn.name}')" class="text-xs font-mono font-semibold bg-[#1A73E8]/20 hover:bg-[#1A73E8]/30 text-[#1A73E8] border border-[#1A73E8]/40 px-3 py-2 rounded-lg transition flex items-center gap-1.5 whitespace-nowrap">
-                                    <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                                       class="flex-1 text-xs bg-[#F3F6FC]/80 text-[#1F1F1F] border border-[#DADCE0] rounded-lg px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50 font-mono">
+                                <button onclick="saveAndVerifyToken('${conn.service}', '${conn.name}')" class="text-xs font-mono font-semibold bg-[#0B57D0]/20 hover:bg-[#0B57D0]/30 text-[#0B57D0] border border-[#1A73E8]/40 px-3 py-2 rounded-lg transition flex items-center gap-1.5 whitespace-nowrap">
+                                    <span class="material-symbols-outlined  ">key</span>
                                     <span>Save Config</span>
                                 </button>
                             </div>
@@ -1874,12 +1901,12 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             for (const item of list) {
                 html += `
                     <tr class="hover:bg-[#F1F3F4] transition">
-                        <td class="py-3 px-4 font-mono text-[#5F6368]">#${item.id}</td>
-                        <td class="py-3 px-4 font-mono text-xs text-[#5F6368]">${item.timestamp}</td>
-                        <td class="py-3 px-4 font-semibold text-[#202124]">${item.signature}</td>
-                        <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded bg-[#F1F3F4] text-[#5F6368] font-mono">${item.severity}</span></td>
-                        <td class="py-3 px-4 font-mono text-xs text-[#5F6368] uppercase">${item.mode}</td>
-                        <td class="py-3 px-4 font-mono text-xs text-[#5F6368]">${item.action}</td>
+                        <td class="py-3 px-4 font-mono text-[#444746]">#${item.id}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-[#444746]">${item.timestamp}</td>
+                        <td class="py-3 px-4 font-semibold text-[#1F1F1F]">${item.signature}</td>
+                        <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded bg-[#F1F3F4] text-[#444746] font-mono">${item.severity}</span></td>
+                        <td class="py-3 px-4 font-mono text-xs text-[#444746] uppercase">${item.mode}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-[#444746]">${item.action}</td>
                         <td class="py-3 px-4 font-mono text-xs text-[#1E8E3E]">${item.status}</td>
                     </tr>
                 `;
@@ -1908,16 +1935,16 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
             let html = '';
             for (const log of logs) {
-                let badgeClass = 'text-[#1A73E8] bg-sky-950/60 border-sky-800';
-                if (log.level === 'WARN') badgeClass = 'text-[#1A73E8] bg-amber-950/60 border-amber-800';
+                let badgeClass = 'text-[#0B57D0] bg-sky-950/60 border-sky-800';
+                if (log.level === 'WARN') badgeClass = 'text-[#0B57D0] bg-amber-950/60 border-amber-800';
                 if (log.level === 'ERROR') badgeClass = 'text-[#D93025] bg-rose-950/60 border-rose-800';
 
                 html += `
                     <div class="flex items-start space-x-2.5 py-1.5 border-b border-slate-900/60 hover:bg-white/50 px-2 rounded transition">
                         <span class="text-[#80868B] font-mono text-[11px] whitespace-nowrap">${log.timestamp}</span>
                         <span class="px-1.5 py-0.5 text-[10px] rounded border font-bold ${badgeClass}">${log.level}</span>
-                        <span class="text-[#5F6368] text-[11px] font-mono whitespace-nowrap">[${log.module}]</span>
-                        <span class="text-[#202124] text-xs font-mono flex-1">${log.message}</span>
+                        <span class="text-[#444746] text-[11px] font-mono whitespace-nowrap">[${log.module}]</span>
+                        <span class="text-[#1F1F1F] text-xs font-mono flex-1">${log.message}</span>
                     </div>
                 `;
             }
@@ -1975,23 +2002,23 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
             let html = '';
             for (const w of workloads) {
-                let badgeColor = 'bg-sky-500/10 text-[#1A73E8] border-sky-500/30';
+                let badgeColor = 'bg-sky-500/10 text-[#0B57D0] border-sky-500/30';
                 let iconName = 'server';
                 if (w.provider === 'vercel') { badgeColor = 'bg-purple-500/10 text-[#9333EA] border-purple-500/30'; iconName = 'globe'; }
-                else if (w.provider === 'aws') { badgeColor = 'bg-transparent text-[#1A73E8] border-[#DADCE0]'; iconName = 'cloud'; }
-                else if (w.provider === 'gcloud') { badgeColor = 'bg-blue-500/10 text-[#1A73E8] border-blue-500/30'; iconName = 'cpu'; }
+                else if (w.provider === 'aws') { badgeColor = 'bg-transparent text-[#0B57D0] border-[#DADCE0]'; iconName = 'cloud'; }
+                else if (w.provider === 'gcloud') { badgeColor = 'bg-blue-500/10 text-[#0B57D0] border-blue-500/30'; iconName = 'cpu'; }
                 else if (w.provider === 'render') { badgeColor = 'bg-[#1E8E3E]/10 text-[#1E8E3E] border-[#1E8E3E]/30'; iconName = 'layers'; }
 
                 html += `
-                    <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/90 rounded-lg p-4 space-y-3 hover:border-[#E8EAED] transition">
+                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/90 rounded-lg p-4 space-y-3 hover:border-[#E8EAED] transition">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-2.5">
                                 <span class="p-2 rounded-lg border ${badgeColor}">
-                                    <i data-lucide="${iconName}" class="w-4 h-4"></i>
+                                    <span class="material-symbols-outlined  ">${iconName}</span>
                                 </span>
                                 <div>
-                                    <h4 class="font-bold text-[#202124] text-xs">${w.name}</h4>
-                                    <p class="text-[11px] text-[#5F6368] font-mono">${w.github_repo || 'No repo bound'}</p>
+                                    <h4 class="font-bold text-[#1F1F1F] text-xs">${w.name}</h4>
+                                    <p class="text-[11px] text-[#444746] font-mono">${w.github_repo || 'No repo bound'}</p>
                                 </div>
                             </div>
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/30">
@@ -2002,7 +2029,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         <div class="grid grid-cols-4 gap-2 pt-2 border-t border-[#DADCE0]/60 font-mono text-[11px]">
                             <div>
                                 <span class="text-[#80868B] block text-[10px] uppercase">CPU</span>
-                                <span class="text-[#1A73E8] font-bold">${w.cpu_percent}</span>
+                                <span class="text-[#0B57D0] font-bold">${w.cpu_percent}</span>
                             </div>
                             <div>
                                 <span class="text-[#80868B] block text-[10px] uppercase">MEMORY</span>
@@ -2014,7 +2041,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                             </div>
                             <div>
                                 <span class="text-[#80868B] block text-[10px] uppercase">ERROR RATE</span>
-                                <span class="text-[#5F6368] font-bold">${w.error_rate}</span>
+                                <span class="text-[#444746] font-bold">${w.error_rate}</span>
                             </div>
                         </div>
                     </div>
@@ -2035,16 +2062,16 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             let html = '';
             for (const c of conns) {
                 html += `
-                    <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/80 p-3.5 rounded-lg flex items-center justify-between">
+                    <div class="bg-[#F3F6FC]/80 border border-[#DADCE0]/80 p-3.5 rounded-lg flex items-center justify-between">
                         <div class="flex items-center space-x-3">
-                            <i data-lucide="wifi" class="w-4 h-4 text-[#1E8E3E]"></i>
+                            <span class="material-symbols-outlined   text-[#1E8E3E]">wifi</span>
                             <div>
-                                <div class="text-xs font-bold text-[#202124] font-mono">${c.name}</div>
-                                <div class="text-[10px] text-[#5F6368] font-mono">${c.endpoint}</div>
+                                <div class="text-xs font-bold text-[#1F1F1F] font-mono">${c.name}</div>
+                                <div class="text-[10px] text-[#444746] font-mono">${c.endpoint}</div>
                             </div>
                         </div>
                         <div class="flex items-center space-x-4 font-mono text-xs">
-                            <span class="text-[#5F6368] text-[11px]">${c.auth}</span>
+                            <span class="text-[#444746] text-[11px]">${c.auth}</span>
                             <span class="text-[#1E8E3E] font-bold bg-[#1E8E3E]/10 px-2 py-0.5 rounded border border-[#1E8E3E]/20">${c.latency}</span>
                         </div>
                     </div>
@@ -2067,53 +2094,53 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 const titleEl = document.getElementById('doc-modal-title');
                 if (titleEl) {
                     titleEl.innerHTML = `
-                        <i data-lucide="file-text" class="w-5 h-5 text-[#1A73E8]"></i>
+                        <span class="material-symbols-outlined   text-[#0B57D0]">file-text</span>
                         Incident Audit Archive #${inc.id}
                     `;
                 }
 
                 content.innerHTML = `
-                    <div class="bg-[#F8F9FA] p-4 rounded-lg border border-[#DADCE0] space-y-3">
+                    <div class="bg-[#F3F6FC] p-4 rounded-lg border border-[#DADCE0] space-y-3">
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
-                            <span class="text-[#5F6368]">Alert Signature:</span>
-                            <span class="font-bold text-[#1A73E8]">${inc.signature}</span>
+                            <span class="text-[#444746]">Alert Signature:</span>
+                            <span class="font-bold text-[#0B57D0]">${inc.signature}</span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
-                            <span class="text-[#5F6368]">Severity / Mode:</span>
-                            <span class="text-[#202124]">${inc.severity} / <span class="uppercase text-[#1A73E8] font-bold">${inc.mode}</span></span>
+                            <span class="text-[#444746]">Severity / Mode:</span>
+                            <span class="text-[#1F1F1F]">${inc.severity} / <span class="uppercase text-[#0B57D0] font-bold">${inc.mode}</span></span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
-                            <span class="text-[#5F6368]">Timestamp:</span>
-                            <span class="text-[#5F6368]">${inc.timestamp}</span>
+                            <span class="text-[#444746]">Timestamp:</span>
+                            <span class="text-[#444746]">${inc.timestamp}</span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
-                            <span class="text-[#5F6368]">OPA Policy Gate:</span>
+                            <span class="text-[#444746]">OPA Policy Gate:</span>
                             <span class="text-[#1E8E3E] font-bold">FAIL-CLOSED ENFORCED (GRAPHOPS VERIFIED)</span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
-                            <span class="text-[#5F6368]">TOCTOU Pre/Post Check:</span>
-                            <span class="text-[#1A73E8]">Revalidated state signature match</span>
+                            <span class="text-[#444746]">TOCTOU Pre/Post Check:</span>
+                            <span class="text-[#0B57D0]">Revalidated state signature match</span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
-                            <span class="text-[#5F6368]">Executed Action:</span>
-                            <span class="text-[#202124] font-bold">${inc.action}</span>
+                            <span class="text-[#444746]">Executed Action:</span>
+                            <span class="text-[#1F1F1F] font-bold">${inc.action}</span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
-                            <span class="text-[#5F6368]">Execution Status:</span>
+                            <span class="text-[#444746]">Execution Status:</span>
                             <span class="text-[#1E8E3E] font-bold">${inc.status}</span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
-                            <span class="text-[#5F6368]">Floci AWS S3 Audit Object:</span>
+                            <span class="text-[#444746]">Floci AWS S3 Audit Object:</span>
                             <span class="text-[#9333EA] underline cursor-pointer" onclick="window.open('http://172.18.100.41:4566/cheezer-audit-logs')">s3://cheezer-audit-logs/incidents/inc_${inc.id}.json</span>
                         </div>
                     </div>
 
                     <div>
-                        <h4 class="text-[#5F6368] font-bold mb-1.5 flex items-center gap-1.5">
-                            <i data-lucide="terminal" class="w-4 h-4 text-[#1E8E3E]"></i>
+                        <h4 class="text-[#444746] font-bold mb-1.5 flex items-center gap-1.5">
+                            <span class="material-symbols-outlined   text-[#1E8E3E]">terminal</span>
                             Recorded Telemetry & Exception Documentation
                         </h4>
-                        <div class="bg-[#F8F9FA] p-3.5 rounded-lg border border-[#DADCE0]/90 text-[#5F6368] font-mono text-[11px] leading-relaxed max-h-48 overflow-y-auto">
+                        <div class="bg-[#F3F6FC] p-3.5 rounded-lg border border-[#DADCE0]/90 text-[#444746] font-mono text-[11px] leading-relaxed max-h-48 overflow-y-auto">
 [INCIDENT #${inc.id} AUDIT RECORD]
 Timestamp: ${inc.timestamp}
 Signature: ${inc.signature}
@@ -2173,40 +2200,40 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
 
                 let statusBadge = '';
                 if (inc.status === 'requires_human_intervention') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-transparent text-[#1A73E8] border border-[#DADCE0]"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Circuit Breaker Locked</span>`;
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-transparent text-[#0B57D0] border border-[#DADCE0]"><span class="material-symbols-outlined  ">warning</span> Circuit Breaker Locked</span>`;
                 } else if (inc.status === 'executed' || inc.status === 'human_approved_and_executed') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/30"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> ${inc.status}</span>`;
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/30"><span class="material-symbols-outlined  ">check-circle-2</span> ${inc.status}</span>`;
                 } else if (inc.status === 'blocked' || inc.status === 'blocked_by_opa') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#D93025]/10 text-[#D93025] border border-[#D93025]/30"><i data-lucide="shield-ban" class="w-3.5 h-3.5"></i> ${inc.status}</span>`;
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#D93025]/10 text-[#D93025] border border-[#D93025]/30"><span class="material-symbols-outlined  ">shield-ban</span> ${inc.status}</span>`;
                 } else {
-                    statusBadge = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#F1F3F4] text-[#5F6368] font-mono">${inc.status}</span>`;
+                    statusBadge = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#F1F3F4] text-[#444746] font-mono">${inc.status}</span>`;
                 }
 
-                let modeBadge = `<span class="font-mono text-xs text-[#5F6368] uppercase">${inc.mode}</span>`;
-                if (inc.mode === 'rule') modeBadge = `<span class="font-mono text-xs text-[#1A73E8] font-semibold uppercase flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> RULE</span>`;
-                else if (inc.mode === 'ai') modeBadge = `<span class="font-mono text-xs text-[#9333EA] font-semibold uppercase flex items-center gap-1"><i data-lucide="cpu" class="w-3 h-3"></i> AI</span>`;
-                else if (inc.mode === 'fallback') modeBadge = `<span class="font-mono text-xs text-[#1A73E8] font-semibold uppercase flex items-center gap-1"><i data-lucide="shield" class="w-3 h-3"></i> FALLBACK</span>`;
+                let modeBadge = `<span class="font-mono text-xs text-[#444746] uppercase">${inc.mode}</span>`;
+                if (inc.mode === 'rule') modeBadge = `<span class="font-mono text-xs text-[#0B57D0] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined  ">bolt</span> RULE</span>`;
+                else if (inc.mode === 'ai') modeBadge = `<span class="font-mono text-xs text-[#9333EA] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined  ">memory</span> AI</span>`;
+                else if (inc.mode === 'fallback') modeBadge = `<span class="font-mono text-xs text-[#0B57D0] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined  ">security</span> FALLBACK</span>`;
 
                 let actionBtn = '';
                 if (inc.status === 'requires_human_intervention') {
-                    actionBtn = `<button onclick="approveIncident(${inc.id})" class="bg-[#1A73E8] hover:bg-[#174EA6] text-white font-bold px-3 py-1 rounded text-xs transition shadow  flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Approve</button>`;
+                    actionBtn = `<button onclick="approveIncident(${inc.id})" class="btn-primary flex items-center gap-2 font-bold px-3 py-1 rounded text-xs transition shadow  flex items-center gap-1"><span class="material-symbols-outlined  ">check</span> Approve</button>`;
                 }
 
                 html += `
                     <tr class="hover:bg-[#F1F3F4] transition">
-                        <td class="py-3 px-4 font-mono text-[#5F6368]">#${inc.id}</td>
-                        <td class="py-3 px-4 font-mono text-xs text-[#5F6368]">${inc.timestamp || '-'}</td>
-                        <td class="py-3 px-4 font-semibold text-[#202124]">${inc.signature}</td>
-                        <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded bg-[#F1F3F4] text-[#5F6368] font-mono">${inc.severity}</span></td>
+                        <td class="py-3 px-4 font-mono text-[#444746]">#${inc.id}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-[#444746]">${inc.timestamp || '-'}</td>
+                        <td class="py-3 px-4 font-semibold text-[#1F1F1F]">${inc.signature}</td>
+                        <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded bg-[#F1F3F4] text-[#444746] font-mono">${inc.severity}</span></td>
                         <td class="py-3 px-4">${modeBadge}</td>
-                        <td class="py-3 px-4 font-mono text-xs text-[#5F6368]">${inc.action}</td>
+                        <td class="py-3 px-4 font-mono text-xs text-[#444746]">${inc.action}</td>
                         <td class="py-3 px-4">${statusBadge}</td>
                         <td class="py-3 px-4 text-right flex items-center justify-end space-x-2">
-                            <button onclick="viewIncidentDoc(${inc.id})" class="bg-white hover:bg-[#F8F9FA] text-[#1A73E8] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono">
-                                <i data-lucide="file-text" class="w-3 h-3 text-[#1A73E8]"></i> Doc
+                            <button onclick="viewIncidentDoc(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#0B57D0] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono">
+                                <span class="material-symbols-outlined   text-[#0B57D0]">file-text</span> Doc
                             </button>
-                            <button onclick="dispatchDevin(${inc.id})" class="bg-white hover:bg-[#F8F9FA] text-[#9333EA] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono font-bold shadow shadow-sm">
-                                <i data-lucide="bot" class="w-3 h-3 text-[#9333EA]"></i> Devin AI Fix
+                            <button onclick="dispatchDevin(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#9333EA] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono font-bold shadow shadow-sm">
+                                <span class="material-symbols-outlined   text-[#9333EA]">smart_toy</span> Devin AI Fix
                             </button>
                             ${actionBtn}
                         </td>
@@ -2233,11 +2260,11 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
             for (const rem of list) {
                 html += `
                     <tr class="hover:bg-[#F1F3F4] transition">
-                        <td class="py-2.5 px-4 font-mono text-[#5F6368]">#${rem.id}</td>
-                        <td class="py-2.5 px-4 font-mono text-[#5F6368]">#${rem.incident_id}</td>
-                        <td class="py-2.5 px-4 font-mono text-[#1A73E8] font-semibold">${rem.resource}</td>
-                        <td class="py-2.5 px-4 font-mono text-xs text-[#5F6368]">${rem.action}</td>
-                        <td class="py-2.5 px-4 font-mono text-xs text-[#5F6368]">${rem.timestamp}</td>
+                        <td class="py-2.5 px-4 font-mono text-[#444746]">#${rem.id}</td>
+                        <td class="py-2.5 px-4 font-mono text-[#444746]">#${rem.incident_id}</td>
+                        <td class="py-2.5 px-4 font-mono text-[#0B57D0] font-semibold">${rem.resource}</td>
+                        <td class="py-2.5 px-4 font-mono text-xs text-[#444746]">${rem.action}</td>
+                        <td class="py-2.5 px-4 font-mono text-xs text-[#444746]">${rem.timestamp}</td>
                     </tr>
                 `;
             }
