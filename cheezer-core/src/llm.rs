@@ -8,10 +8,12 @@ use tokio::time::timeout;
 
 static LLM_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
 
+#[allow(dead_code)]
 pub fn get_llm_call_count() -> usize {
     LLM_CALL_COUNT.load(Ordering::Relaxed)
 }
 
+#[allow(dead_code)]
 pub fn reset_llm_call_count() {
     LLM_CALL_COUNT.store(0, Ordering::Relaxed);
 }

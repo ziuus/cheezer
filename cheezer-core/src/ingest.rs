@@ -80,8 +80,8 @@ async fn handle_webhook(
         .and_then(|h| h.to_str().ok())
         .or_else(|| {
             headers.get("authorization").and_then(|h| h.to_str().ok()).map(|auth| {
-                if auth.starts_with("Bearer ") {
-                    &auth[7..]
+                if let Some(stripped) = auth.strip_prefix("Bearer ") {
+                    stripped
                 } else {
                     auth
                 }

@@ -135,6 +135,7 @@ pub fn init_db() -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn clear_db() -> Result<()> {
     let conn = get_db().lock().unwrap();
     conn.execute("DELETE FROM incidents", [])?;

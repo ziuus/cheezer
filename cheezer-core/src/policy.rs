@@ -6,10 +6,12 @@ use std::time::Duration;
 
 static POLICY_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
 
+#[allow(dead_code)]
 pub fn get_policy_call_count() -> usize {
     POLICY_CALL_COUNT.load(Ordering::Relaxed)
 }
 
+#[allow(dead_code)]
 pub fn reset_policy_call_count() {
     POLICY_CALL_COUNT.store(0, Ordering::Relaxed);
 }
