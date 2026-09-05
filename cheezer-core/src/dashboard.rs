@@ -1119,8 +1119,8 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         </div>
 
         <!-- MODAL: ADD MONITORED TARGET -->
-        <div id="add-watcher-modal" class="fixed inset-0 z-50 bg-[#F3F6FC]/80 -sm hidden items-center justify-center p-4">
-            <div class=" rounded-lg p-6 max-w-lg w-full border border-[#DADCE0] shadow-2xl space-y-5">
+        <div id="add-watcher-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 max-w-lg w-full border border-[#DADCE0] shadow-2xl space-y-5 text-[#1F1F1F] z-50">
                 <div class="flex items-center justify-between pb-3 border-b border-[#DADCE0]">
                     <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
                         <span class="material-symbols-outlined   text-[#0B57D0]">health_and_safety</span>
@@ -1179,10 +1179,10 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-3 border-t border-[#DADCE0]">
-                    <button onclick="closeAddWatcherModal()" class="px-4 py-2 rounded-lg text-xs font-mono bg-[#F1F3F4] text-[#444746] hover:bg-[#F3F6FC] transition">
+                    <button onclick="closeAddWatcherModal()" class="px-4 py-2.5 rounded-full text-xs font-medium bg-[#F1F3F4] text-[#444746] hover:bg-[#E8EAED] transition">
                         Cancel
                     </button>
-                    <button onclick="saveWatcher()" class="px-4 py-2 rounded-lg text-xs font-mono font-bold bg-[#0B57D0] hover:bg-[#174EA6] text-[#1F1F1F] transition flex items-center gap-1.5">
+                    <button onclick="saveWatcher()" class="px-5 py-2.5 rounded-full text-xs font-medium bg-[#1A73E8] hover:bg-[#174EA6] text-white transition flex items-center gap-1.5 shadow">
                         <span class="material-symbols-outlined  ">check</span>
                         <span>Start Watching</span>
                     </button>
@@ -1191,8 +1191,8 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         </div>
 
         <!-- MODAL: INCIDENT DOCUMENTATION & AUDIT INSPECTOR -->
-        <div id="incident-doc-modal" class="fixed inset-0 z-50 bg-[#F3F6FC]/80 -sm hidden items-center justify-center p-4">
-            <div class=" rounded-lg p-6 max-w-2xl w-full border border-[#DADCE0] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+        <div id="incident-doc-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 max-w-2xl w-full border border-[#DADCE0] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-[#1F1F1F] z-50">
                 <div class="flex items-center justify-between pb-3 border-b border-[#DADCE0]">
                     <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2" id="doc-modal-title">
                         <span class="material-symbols-outlined   text-[#0B57D0]">description</span>
@@ -1208,7 +1208,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-3 border-t border-[#DADCE0]">
-                    <button onclick="closeIncidentDocModal()" class="px-4 py-2 rounded-lg text-xs font-mono bg-[#F1F3F4] text-[#444746] hover:bg-[#F3F6FC] transition">
+                    <button onclick="closeIncidentDocModal()" class="px-4 py-2.5 rounded-full text-xs font-medium bg-[#F1F3F4] text-[#444746] hover:bg-[#E8EAED] transition">
                         Close Inspector
                     </button>
                 </div>
