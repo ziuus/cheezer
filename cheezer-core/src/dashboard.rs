@@ -1678,15 +1678,25 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             try {
                 const res = await fetch('/api/metrics');
                 const data = await res.json();
-                document.getElementById('metric-success-rate').innerText = data.success_rate_percent;
-                document.getElementById('metric-success-bar').style.width = data.success_rate_percent;
-                document.getElementById('metric-rule-percent').innerText = data.rule_fast_path_percent;
-                document.getElementById('metric-ai-percent').innerText = data.ai_escalation_percent;
-                document.getElementById('metric-opa-status').innerText = data.opa_fail_closed_status;
-                document.getElementById('metric-rule-latency').innerText = data.avg_rule_latency_ms;
-                document.getElementById('metric-ai-latency').innerText = data.avg_ai_latency_ms;
-                document.getElementById('metric-toctou-latency').innerText = data.toctou_revalidation_time_ms;
-                document.getElementById('metric-floci-sync').innerText = data.floci_aws_sync;
+                const sRate = document.getElementById('metric-success-rate');
+                const sBar = document.getElementById('metric-success-bar');
+                const rPerc = document.getElementById('metric-rule-percent');
+                const aPerc = document.getElementById('metric-ai-percent');
+                const opaSt = document.getElementById('metric-opa-status');
+                const rLat = document.getElementById('metric-rule-latency');
+                const aLat = document.getElementById('metric-ai-latency');
+                const tLat = document.getElementById('metric-toctou-latency');
+                const fSync = document.getElementById('metric-floci-sync');
+
+                if (sRate) sRate.innerText = data.success_rate_percent;
+                if (sBar) sBar.style.width = data.success_rate_percent;
+                if (rPerc) rPerc.innerText = data.rule_fast_path_percent;
+                if (aPerc) aPerc.innerText = data.ai_escalation_percent;
+                if (opaSt) opaSt.innerText = data.opa_fail_closed_status;
+                if (rLat) rLat.innerText = data.avg_rule_latency_ms;
+                if (aLat) aLat.innerText = data.avg_ai_latency_ms;
+                if (tLat) tLat.innerText = data.toctou_revalidation_time_ms;
+                if (fSync) fSync.innerText = data.floci_aws_sync;
 
                 renderWorkloadsTelemetry(data.workloads || []);
                 renderConnectionsMetrics(data.connections || []);
@@ -1793,10 +1803,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
                 const modal = document.getElementById('incident-doc-modal');
                 const content = document.getElementById('doc-modal-content');
-                document.getElementById('doc-modal-title').innerHTML = `
-                    <i data-lucide="file-text" class="w-5 h-5 text-amber-400"></i>
-                    Incident Audit Archive #${inc.id}
-                `;
+                if (!modal || !content) return;
+                const titleEl = document.getElementById('doc-modal-title');
+                if (titleEl) {
+                    titleEl.innerHTML = `
+                        <i data-lucide="file-text" class="w-5 h-5 text-amber-400"></i>
+                        Incident Audit Archive #${inc.id}
+                    `;
+                }
 
                 content.innerHTML = `
                     <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
@@ -1860,7 +1874,8 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
         }
 
         function closeIncidentDocModal() {
-            document.getElementById('incident-doc-modal').classList.add('hidden');
+            const modal = document.getElementById('incident-doc-modal');
+            if (modal) modal.classList.add('hidden');
         }
 
         function renderIncidents(list) {
@@ -1870,8 +1885,19 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
             let blocked = 0;
 
             const body = document.getElementById('incidents-body');
+            if (!body) return;
+
+            const elTotal = document.getElementById('kpi-total');
+            const elExec = document.getElementById('kpi-executed');
+            const elAppr = document.getElementById('kpi-approval');
+            const elBlk = document.getElementById('kpi-blocked');
+
             if (list.length === 0) {
                 body.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-500 font-mono">No incidents recorded yet</td></tr>`;
+                if (elTotal) elTotal.innerText = 0;
+                if (elExec) elExec.innerText = 0;
+                if (elAppr) elAppr.innerText = 0;
+                if (elBlk) elBlk.innerText = 0;
                 return;
             }
 
@@ -1922,14 +1948,15 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
             }
 
             body.innerHTML = html;
-            document.getElementById('kpi-total').innerText = total;
-            document.getElementById('kpi-executed').innerText = executed;
-            document.getElementById('kpi-approval').innerText = approval;
-            document.getElementById('kpi-blocked').innerText = blocked;
+            if (elTotal) elTotal.innerText = total;
+            if (elExec) elExec.innerText = executed;
+            if (elAppr) elAppr.innerText = approval;
+            if (elBlk) elBlk.innerText = blocked;
         }
 
         function renderRemediations(list) {
             const body = document.getElementById('remediations-body');
+            if (!body) return;
             if (list.length === 0) {
                 body.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-500 font-mono">No remediation history records yet</td></tr>`;
                 return;
