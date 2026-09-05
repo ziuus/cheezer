@@ -750,31 +750,31 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         <!-- Navigation Tab Bar -->
         <nav class="flex flex-wrap items-center space-x-2 my-6 border-b border-slate-800/80 pb-3 gap-y-2">
-            <button id="tab-btn-incidents" onclick="switchTab('incidents')" class="tab-active px-4 py-2 rounded-lg text-xs font-semibold transition border flex items-center space-x-2">
+            <a id="tab-btn-incidents" href="/incidents" onclick="switchTab('incidents'); return false;" class="tab-active px-4 py-2 rounded-lg text-xs font-semibold transition border flex items-center space-x-2">
                 <i data-lucide="shield-alert" class="w-4 h-4"></i>
                 <span>Live Incidents & Circuit Breakers</span>
-            </button>
-            <button id="tab-btn-connections" onclick="switchTab('connections')" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            </a>
+            <a id="tab-btn-connections" href="/connections" onclick="switchTab('connections'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
                 <i data-lucide="link" class="w-4 h-4"></i>
                 <span>Connections</span>
-            </button>
-            <button id="tab-btn-metrics" onclick="switchTab('metrics')" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            </a>
+            <a id="tab-btn-metrics" href="/monitor" onclick="switchTab('metrics'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
                 <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
                 <span>Monitor</span>
-            </button>
-            <button id="tab-btn-logs" onclick="switchTab('logs')" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            </a>
+            <a id="tab-btn-logs" href="/logs" onclick="switchTab('logs'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
                 <i data-lucide="terminal" class="w-4 h-4"></i>
                 <span>Real-Time Logs</span>
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            </button>
-            <button id="tab-btn-history" onclick="switchTab('history')" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            </a>
+            <a id="tab-btn-history" href="/history" onclick="switchTab('history'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
                 <i data-lucide="history" class="w-4 h-4"></i>
                 <span>Audit History</span>
-            </button>
-            <button id="tab-btn-settings" onclick="switchTab('settings')" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
+            </a>
+            <a id="tab-btn-settings" href="/settings" onclick="switchTab('settings'); return false;" class="px-4 py-2 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white hover:bg-slate-900/60 border border-transparent flex items-center space-x-2">
                 <i data-lucide="settings" class="w-4 h-4"></i>
                 <span>Settings</span>
-            </button>
+            </a>
         </nav>
 
         <!-- PAGE 1: INCIDENTS & CIRCUIT BREAKERS -->
@@ -1209,7 +1209,17 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             }
         }
 
-        function switchTab(tab) {
+        function getTabFromPath() {
+            const path = window.location.pathname.replace(/^\//, '');
+            if (path === 'connections') return 'connections';
+            if (path === 'monitor' || path === 'metrics') return 'metrics';
+            if (path === 'logs') return 'logs';
+            if (path === 'history') return 'history';
+            if (path === 'settings') return 'settings';
+            return 'incidents';
+        }
+
+        function switchTab(tab, updateUrl = true) {
             const tabs = ['incidents', 'connections', 'metrics', 'logs', 'history', 'settings'];
             tabs.forEach(t => {
                 const content = document.getElementById(`tab-content-${t}`);
@@ -1223,14 +1233,23 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             if (activeContent) activeContent.classList.remove('hidden');
             if (activeBtn) activeBtn.className = "tab-active px-4 py-2 rounded-lg text-xs font-semibold transition border flex items-center space-x-2";
 
+            if (tab === 'incidents') fetchIncidents();
             if (tab === 'logs') fetchLogs();
             if (tab === 'metrics') fetchMetrics();
             if (tab === 'connections') { fetchConnections(); fetchWatchers(); }
             if (tab === 'history') fetchHistory();
             if (tab === 'settings') fetchSettings();
             
+            if (updateUrl && history.pushState) {
+                const routePath = tab === 'incidents' ? '/incidents' : '/' + (tab === 'metrics' ? 'monitor' : tab);
+                history.pushState({ tab }, '', routePath);
+            }
             initLucideIcons();
         }
+
+        window.addEventListener('popstate', () => {
+            switchTab(getTabFromPath(), false);
+        });
 
         async function fetchKillSwitchStatus() {
             try {
@@ -1990,19 +2009,15 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
         setInterval(fetchIncidents, 1000);
         setInterval(fetchKillSwitchStatus, 1000);
         window.addEventListener('DOMContentLoaded', () => {
-            fetchIncidents();
+            const tab = getTabFromPath();
+            switchTab(tab, false);
             fetchKillSwitchStatus();
-            fetchConnections();
-            fetchWatchers();
-            fetchMetrics();
             initLucideIcons();
         });
         window.onload = () => {
-            fetchIncidents();
+            const tab = getTabFromPath();
+            switchTab(tab, false);
             fetchKillSwitchStatus();
-            fetchConnections();
-            fetchWatchers();
-            fetchMetrics();
             initLucideIcons();
         };
     </script>
