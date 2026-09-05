@@ -137,6 +137,27 @@ pub fn select_forecasting_method(samples: &[MetricSample]) -> ForecastingMethod 
     ForecastingMethod::LocalML
 }
 
+/// Dynamically extracts time-series metric samples from incoming Alert annotations or uses baseline fallback samples
+pub fn extract_samples_from_alert(alert: &Alert, fallback_samples: Vec<MetricSample>) -> Vec<MetricSample> {
+    if let Some(samples_str) = alert.annotations.get("samples").or_else(|| alert.annotations.get("metric_history")) {
+        let mut parsed = Vec::new();
+        for (i, token) in samples_str.split(',').enumerate() {
+            let parts: Vec<&str> = token.split(':').collect();
+            if parts.len() == 2 {
+                if let (Ok(ts), Ok(val)) = (parts[0].trim().parse::<u64>(), parts[1].trim().parse::<f32>()) {
+                    parsed.push(MetricSample { timestamp_sec: ts, value: val });
+                }
+            } else if let Ok(val) = token.trim().parse::<f32>() {
+                parsed.push(MetricSample { timestamp_sec: (i as u64 + 1) * 60, value: val });
+            }
+        }
+        if parsed.len() >= 2 {
+            return parsed;
+        }
+    }
+    fallback_samples
+}
+
 /// Level 1 & Level 2 Predictive Risk Engine:
 /// Evaluates trend extrapolation, EWMA anomaly deviation, and Holt-Winters/ML models
 /// to predict failures BEFORE they occur with mathematically grounded confidence bounds.
@@ -178,20 +199,37 @@ pub fn evaluate_predictive_risk(alert: &Alert) -> RiskAssessment {
 
     // 1. Memory Leak & Imminent OOMKilled Forecasting (Linear Regression Trend)
     if alertname.contains("MemoryGrowth") || alertname.contains("OOMTrend") || alertname.contains("HighMemory") {
-        let samples = vec![
+        let samples = extract_samples_from_alert(alert, vec![
             MetricSample { timestamp_sec: 100, value: 360.0 },
             MetricSample { timestamp_sec: 200, value: 380.0 },
             MetricSample { timestamp_sec: 300, value: 405.0 },
             MetricSample { timestamp_sec: 400, value: 430.0 },
             MetricSample { timestamp_sec: 500, value: 455.0 },
-        ];
+        ]);
         let method = select_forecasting_method(&samples);
 
-        let mem_growth_mb_per_min: f32 = 15.0;
-        let current_mem_mb: f32 = 455.0;
-        let limit_mem_mb: f32 = 512.0;
-        let remaining_mb: f32 = limit_mem_mb - current_mem_mb;
-        let ttf_mins = f32::max(remaining_mb / mem_growth_mb_per_min, 1.0) as u32;
+        let current_mem_mb = samples.last().map(|s| s.value).unwrap_or(455.0);
+        let limit_mem_mb: f32 = alert.annotations.get("limit_mb").and_then(|s| s.parse().ok()).unwrap_or(512.0);
+
+        let slope = if samples.len() >= 2 {
+            let n = samples.len() as f32;
+            let sum_x: f32 = samples.iter().map(|s| s.timestamp_sec as f32 / 60.0).sum();
+            let sum_y: f32 = samples.iter().map(|s| s.value).sum();
+            let sum_xy: f32 = samples.iter().map(|s| (s.timestamp_sec as f32 / 60.0) * s.value).sum();
+            let sum_x2: f32 = samples.iter().map(|s| (s.timestamp_sec as f32 / 60.0).powi(2)).sum();
+            let denom = n * sum_x2 - sum_x.powi(2);
+            if denom.abs() > 1e-5 {
+                (n * sum_xy - sum_x * sum_y) / denom
+            } else {
+                15.0
+            }
+        } else {
+            15.0
+        };
+
+        let mem_growth_mb_per_min = slope.max(1.0);
+        let remaining_mb = (limit_mem_mb - current_mem_mb).max(1.0);
+        let ttf_mins = (remaining_mb / mem_growth_mb_per_min) as u32;
 
         let confidence: f32 = 0.92;
         let prob: f32 = (confidence * 100.0).min(98.0);
@@ -216,7 +254,7 @@ pub fn evaluate_predictive_risk(alert: &Alert) -> RiskAssessment {
                 "Memory growth rate of {:.1} MB/min projects OOMKilled breach in ~{} minutes (Current: {:.0}MB / Limit: {:.0}MB).",
                 mem_growth_mb_per_min, ttf_mins, current_mem_mb, limit_mem_mb
             ),
-            method_rationale: format!("Selected {} based on strong linear trend (R^2 = 0.94) across 5 memory samples.", method),
+            method_rationale: format!("Selected {} based on strong linear trend across {} metric samples.", method, samples.len()),
         };
     }
 
@@ -316,6 +354,7 @@ pub fn evaluate_predictive_risk(alert: &Alert) -> RiskAssessment {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_select_forecasting_method_linear_trend() {
