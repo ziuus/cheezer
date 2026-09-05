@@ -843,26 +843,26 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #080c14; }
         code, .font-mono { font-family: 'JetBrains Mono', monospace; }
         .tab-active { background-color: rgba(245, 158, 11, 0.12); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); box-shadow: 0 0 15px rgba(245, 158, 11, 0.08); }
-        .glass-card { background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.5); }
+        . { background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.5); }
     </style>
 </head>
 <body class="bg-[#F8F9FA] text-[#202124] min-h-screen relative overflow-x-hidden">
     <!-- Ambient Background Lighting Mesh -->
     <div class="fixed inset-0 pointer-events-none z-0 opacity-40">
-        <div class="absolute -top-40 -left-40 w-96 h-96 bg-[#1A73E8]/10 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/3 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-transparent rounded-full "></div>
+        <div class="absolute top-1/3 -right-40 w-96 h-96 bg-purple-500/10 rounded-full "></div>
+        <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-blue-500/10 rounded-full "></div>
     </div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Header -->
         <header class="flex flex-col md:flex-row md:items-center md:justify-between pb-6 border-b border-[#DADCE0]/80 gap-4">
             <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 flex items-center justify-center shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-amber-500/20 text-white">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 flex items-center justify-center shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-amber-500/20 text-[#202124]">
                     <i data-lucide="shield" class="w-7 h-7 stroke-[2.5]"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-extrabold tracking-tight text-white flex items-center gap-3">
+                    <h1 class="text-2xl font-extrabold tracking-tight text-[#202124] flex items-center gap-3">
                         Cheezer Core <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/20 font-mono font-semibold tracking-wide">v0.1.0 • Control Plane</span>
                     </h1>
                     <p class="text-xs text-[#5F6368] mt-0.5">Autonomous Kubernetes Self-Healing Engine & Reliability Control Plane</p>
@@ -874,11 +874,11 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                     <i data-lucide="power" class="w-3.5 h-3.5"></i>
                     <span id="kill-switch-text">ENGINE ACTIVE</span>
                 </button>
-                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-xl text-xs font-mono text-[#5F6368] backdrop-blur">
+                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-xl text-xs font-mono text-[#5F6368] ">
                     <i data-lucide="activity" class="w-3.5 h-3.5 text-[#1E8E3E] animate-pulse"></i>
                     <span>WATCHDOG ACTIVE</span>
                 </div>
-                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-xl text-xs font-mono text-[#5F6368] backdrop-blur">
+                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-xl text-xs font-mono text-[#5F6368] ">
                     <i data-lucide="lock" class="w-3.5 h-3.5 text-[#1A73E8]"></i>
                     <span>OPA FAIL-CLOSED</span>
                 </div>
@@ -917,28 +917,28 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         <!-- PAGE 1: INCIDENTS & CIRCUIT BREAKERS -->
         <div id="tab-content-incidents" class="__TAB_CONTENT_CLASS_INCIDENTS__">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpi-grid">
-                <div class="glass-card rounded-xl p-5 backdrop-blur">
+                <div class=" rounded-xl p-5 ">
                     <div class="flex items-center justify-between text-xs font-medium text-[#5F6368] uppercase tracking-wider">
                         <span>Total Incidents</span>
                         <i data-lucide="layers" class="w-4 h-4 text-[#80868B]"></i>
                     </div>
-                    <div class="text-3xl font-extrabold text-white mt-2 font-mono" id="kpi-total">0</div>
+                    <div class="text-3xl font-extrabold text-[#202124] mt-2 font-mono" id="kpi-total">0</div>
                 </div>
-                <div class="glass-card rounded-xl p-5 backdrop-blur">
+                <div class=" rounded-xl p-5 ">
                     <div class="flex items-center justify-between text-xs font-medium text-[#5F6368] uppercase tracking-wider">
                         <span>Self-Remediated</span>
                         <i data-lucide="check-circle-2" class="w-4 h-4 text-[#1E8E3E]"></i>
                     </div>
                     <div class="text-3xl font-extrabold text-[#1E8E3E] mt-2 font-mono" id="kpi-executed">0</div>
                 </div>
-                <div class="glass-card bg-amber-950/20 border-[#1A73E8]/30 rounded-xl p-5 backdrop-blur">
+                <div class=" bg-white border-[#DADCE0] rounded-xl p-5 ">
                     <div class="flex items-center justify-between text-xs font-medium text-[#1A73E8] uppercase tracking-wider">
                         <span>Requires Approval</span>
                         <i data-lucide="alert-triangle" class="w-4 h-4 text-[#1A73E8] animate-pulse"></i>
                     </div>
                     <div class="text-3xl font-extrabold text-[#1A73E8] mt-2 font-mono" id="kpi-approval">0</div>
                 </div>
-                <div class="glass-card rounded-xl p-5 backdrop-blur">
+                <div class=" rounded-xl p-5 ">
                     <div class="flex items-center justify-between text-xs font-medium text-[#5F6368] uppercase tracking-wider">
                         <span>OPA Denials / Blocked</span>
                         <i data-lucide="shield-ban" class="w-4 h-4 text-[#D93025]"></i>
@@ -947,16 +947,16 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 </div>
             </div>
 
-            <section class="glass-card rounded-2xl p-6 shadow-xl">
+            <section class=" rounded-2xl p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
                             <i data-lucide="rss" class="w-4 h-4 text-[#1A73E8]"></i>
                             Live Incident Stream & Circuit Breakers
                         </h2>
                         <p class="text-xs text-[#5F6368] mt-0.5">Real-time audit log of rule evaluations, LLM escalations, and human intervention locks</p>
                     </div>
-                    <button onclick="fetchIncidents()" class="text-xs font-mono bg-[#F1F3F4]/80 hover:bg-[#E8EAED] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                    <button onclick="fetchIncidents()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
                         <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
                         <span>Refresh Stream</span>
                     </button>
@@ -989,16 +989,16 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         <!-- PAGE 2: CONNECTIONS MANAGER & WATCHER ENGINE -->
         <div id="tab-content-connections" class="__TAB_CONTENT_CLASS_CONNECTIONS__">
             <!-- Section 1: Gateways & Connections -->
-            <section class="glass-card rounded-2xl p-6 shadow-xl">
+            <section class=" rounded-2xl p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
                             <i data-lucide="link" class="w-4 h-4 text-[#1A73E8]"></i>
                             Cloud & Platform Auth Gateways
                         </h2>
                         <p class="text-xs text-[#5F6368] mt-0.5">Manage credentials for Kubernetes, Vercel, GitHub, Render, AWS, and GCloud</p>
                     </div>
-                    <button onclick="fetchConnections()" class="text-xs font-mono bg-[#F1F3F4]/80 hover:bg-[#E8EAED] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                    <button onclick="fetchConnections()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
                         <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
                         <span>Refresh Connections</span>
                     </button>
@@ -1010,16 +1010,16 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             </section>
 
             <!-- Section 2: Monitored Workloads & Watchers -->
-            <section class="glass-card rounded-2xl p-6 shadow-xl">
+            <section class=" rounded-2xl p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h2 class="text-base font-bold text-white flex items-center gap-2">
-                            <i data-lucide="eye" class="w-4 h-4 text-purple-400"></i>
+                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
+                            <i data-lucide="eye" class="w-4 h-4 text-[#9333EA]"></i>
                             Monitored Workloads & Watcher Engine
                         </h2>
                         <p class="text-xs text-[#5F6368] mt-0.5">Active software, websites, and backend services watched across Vercel, K8s, AWS & GCloud</p>
                     </div>
-                    <button onclick="openAddWatcherModal()" class="text-xs font-mono font-bold bg-[#1A73E8] hover:bg-amber-400 text-white px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-amber-500/20">
+                    <button onclick="openAddWatcherModal()" class="text-xs font-mono font-bold bg-[#1A73E8] hover:bg-[#174EA6] text-[#202124] px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-amber-500/20">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
                         <span>+ Add Monitored Target</span>
                     </button>
@@ -1032,14 +1032,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- MODAL: ADD MONITORED TARGET -->
-        <div id="add-watcher-modal" class="fixed inset-0 z-50 bg-[#F8F9FA]/80 backdrop-blur-sm hidden items-center justify-center p-4">
-            <div class="glass-card rounded-2xl p-6 max-w-lg w-full border border-[#DADCE0] shadow-2xl space-y-5">
+        <div id="add-watcher-modal" class="fixed inset-0 z-50 bg-[#F8F9FA]/80 -sm hidden items-center justify-center p-4">
+            <div class=" rounded-2xl p-6 max-w-lg w-full border border-[#DADCE0] shadow-2xl space-y-5">
                 <div class="flex items-center justify-between pb-3 border-b border-[#DADCE0]">
-                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <h3 class="text-base font-bold text-[#202124] flex items-center gap-2">
                         <i data-lucide="shield-plus" class="w-5 h-5 text-[#1A73E8]"></i>
                         Add Monitored Workload Target
                     </h3>
-                    <button onclick="closeAddWatcherModal()" class="text-[#5F6368] hover:text-white">
+                    <button onclick="closeAddWatcherModal()" class="text-[#5F6368] hover:text-[#202124]">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -1092,10 +1092,10 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-3 border-t border-[#DADCE0]">
-                    <button onclick="closeAddWatcherModal()" class="px-4 py-2 rounded-xl text-xs font-mono bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED] transition">
+                    <button onclick="closeAddWatcherModal()" class="px-4 py-2 rounded-xl text-xs font-mono bg-[#F1F3F4] text-[#5F6368] hover:bg-[#F8F9FA] transition">
                         Cancel
                     </button>
-                    <button onclick="saveWatcher()" class="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-[#1A73E8] hover:bg-amber-400 text-white transition flex items-center gap-1.5">
+                    <button onclick="saveWatcher()" class="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-[#1A73E8] hover:bg-[#174EA6] text-[#202124] transition flex items-center gap-1.5">
                         <i data-lucide="check" class="w-4 h-4"></i>
                         <span>Start Watching</span>
                     </button>
@@ -1104,14 +1104,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- MODAL: INCIDENT DOCUMENTATION & AUDIT INSPECTOR -->
-        <div id="incident-doc-modal" class="fixed inset-0 z-50 bg-[#F8F9FA]/80 backdrop-blur-sm hidden items-center justify-center p-4">
-            <div class="glass-card rounded-2xl p-6 max-w-2xl w-full border border-[#DADCE0] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+        <div id="incident-doc-modal" class="fixed inset-0 z-50 bg-[#F8F9FA]/80 -sm hidden items-center justify-center p-4">
+            <div class=" rounded-2xl p-6 max-w-2xl w-full border border-[#DADCE0] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between pb-3 border-b border-[#DADCE0]">
-                    <h3 class="text-base font-bold text-white flex items-center gap-2" id="doc-modal-title">
+                    <h3 class="text-base font-bold text-[#202124] flex items-center gap-2" id="doc-modal-title">
                         <i data-lucide="file-text" class="w-5 h-5 text-[#1A73E8]"></i>
                         Incident Documentation & Telemetry Archive
                     </h3>
-                    <button onclick="closeIncidentDocModal()" class="text-[#5F6368] hover:text-white">
+                    <button onclick="closeIncidentDocModal()" class="text-[#5F6368] hover:text-[#202124]">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -1121,7 +1121,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-3 border-t border-[#DADCE0]">
-                    <button onclick="closeIncidentDocModal()" class="px-4 py-2 rounded-xl text-xs font-mono bg-[#F1F3F4] text-[#5F6368] hover:bg-[#E8EAED] transition">
+                    <button onclick="closeIncidentDocModal()" class="px-4 py-2 rounded-xl text-xs font-mono bg-[#F1F3F4] text-[#5F6368] hover:bg-[#F8F9FA] transition">
                         Close Inspector
                     </button>
                 </div>
@@ -1131,37 +1131,37 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         <!-- PAGE 3: MONITOR & TELEMETRY -->
         <div id="tab-content-metrics" class="__TAB_CONTENT_CLASS_METRICS__">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="glass-card rounded-2xl p-6 backdrop-blur">
+                <div class=" rounded-2xl p-6 ">
                     <div class="flex items-center justify-between text-xs font-semibold text-[#5F6368] uppercase tracking-wider">
                         <span>Self-Healing Success Rate</span>
                         <i data-lucide="check-check" class="w-4 h-4 text-[#1E8E3E]"></i>
                     </div>
                     <div class="text-4xl font-extrabold text-[#1E8E3E] mt-3 font-mono" id="metric-success-rate">0%</div>
-                    <div class="w-full bg-[#F1F3F4]/80 h-2 rounded-full mt-4 overflow-hidden">
+                    <div class="w-full bg-white h-2 rounded-full mt-4 overflow-hidden">
                         <div id="metric-success-bar" class="bg-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
                     <p class="text-xs text-[#5F6368] mt-3">Verified incident recoveries without manual engineering intervention</p>
                 </div>
 
-                <div class="glass-card rounded-2xl p-6 backdrop-blur">
+                <div class=" rounded-2xl p-6 ">
                     <div class="flex items-center justify-between text-xs font-semibold text-[#5F6368] uppercase tracking-wider">
                         <span>Triage Path Breakdown</span>
-                        <i data-lucide="git-fork" class="w-4 h-4 text-purple-400"></i>
+                        <i data-lucide="git-fork" class="w-4 h-4 text-[#9333EA]"></i>
                     </div>
                     <div class="flex items-center justify-between mt-4">
                         <div>
-                            <span class="text-2xl font-bold text-sky-400 font-mono" id="metric-rule-percent">0%</span>
+                            <span class="text-2xl font-bold text-[#1A73E8] font-mono" id="metric-rule-percent">0%</span>
                             <span class="text-xs text-[#5F6368] block font-mono mt-0.5">⚡ Rule Fast-Path</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-2xl font-bold text-purple-400 font-mono" id="metric-ai-percent">0%</span>
+                            <span class="text-2xl font-bold text-[#9333EA] font-mono" id="metric-ai-percent">0%</span>
                             <span class="text-xs text-[#5F6368] block font-mono mt-0.5">🤖 AI Escalation</span>
                         </div>
                     </div>
                     <p class="text-xs text-[#5F6368] mt-4">Known faults execute sub-100ms with zero AI token cost</p>
                 </div>
 
-                <div class="glass-card rounded-2xl p-6 backdrop-blur">
+                <div class=" rounded-2xl p-6 ">
                     <div class="flex items-center justify-between text-xs font-semibold text-[#5F6368] uppercase tracking-wider">
                         <span>OPA Policy Enforcement</span>
                         <i data-lucide="shield-check" class="w-4 h-4 text-[#1A73E8]"></i>
@@ -1172,16 +1172,16 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             </div>
 
             <!-- Monitored Workloads Process Telemetry -->
-            <section class="glass-card rounded-2xl p-6 shadow-xl">
+            <section class=" rounded-2xl p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <h3 class="text-base font-bold text-[#202124] flex items-center gap-2">
                             <i data-lucide="activity" class="w-4 h-4 text-[#1E8E3E]"></i>
                             Active Process Telemetry & Live Workload Metrics
                         </h3>
                         <p class="text-xs text-[#5F6368] mt-0.5">Live CPU, Memory, Throughput, and Error Rate metrics across watched systems</p>
                     </div>
-                    <button onclick="fetchMetrics()" class="text-xs font-mono bg-[#F1F3F4]/80 hover:bg-[#E8EAED] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                    <button onclick="fetchMetrics()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
                         <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
                         <span>Refresh Telemetry</span>
                     </button>
@@ -1193,10 +1193,10 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             </section>
 
             <!-- Connection Telemetry & Response Matrix -->
-            <section class="glass-card rounded-2xl p-6 shadow-xl">
+            <section class=" rounded-2xl p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <h3 class="text-base font-bold text-[#202124] flex items-center gap-2">
                             <i data-lucide="wifi" class="w-4 h-4 text-[#1A73E8]"></i>
                             Cloud Gateway Latency & Auth Connection Matrix
                         </h3>
@@ -1211,19 +1211,19 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             </section>
 
             <!-- Benchmarks -->
-            <section class="glass-card rounded-2xl p-6 shadow-xl">
-                <h3 class="text-base font-bold text-white mb-4 pb-3 border-b border-[#DADCE0]/80 flex items-center gap-2">
+            <section class=" rounded-2xl p-6 shadow-xl">
+                <h3 class="text-base font-bold text-[#202124] mb-4 pb-3 border-b border-[#DADCE0]/80 flex items-center gap-2">
                     <i data-lucide="cpu" class="w-4 h-4 text-[#1A73E8]"></i>
                     Engine Latency & Cloud Synchronization Benchmarks
                 </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/80 p-4 rounded-xl">
                         <div class="text-[11px] text-[#5F6368] font-mono uppercase">Rule Fast-Path Latency</div>
-                        <div class="text-xl font-bold text-sky-400 mt-1 font-mono" id="metric-rule-latency">< 50ms</div>
+                        <div class="text-xl font-bold text-[#1A73E8] mt-1 font-mono" id="metric-rule-latency">< 50ms</div>
                     </div>
                     <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/80 p-4 rounded-xl">
                         <div class="text-[11px] text-[#5F6368] font-mono uppercase">NVIDIA NIM LLM Latency</div>
-                        <div class="text-xl font-bold text-purple-400 mt-1 font-mono" id="metric-ai-latency">1.2s</div>
+                        <div class="text-xl font-bold text-[#9333EA] mt-1 font-mono" id="metric-ai-latency">1.2s</div>
                     </div>
                     <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/80 p-4 rounded-xl">
                         <div class="text-[11px] text-[#5F6368] font-mono uppercase">TOCTOU Revalidation Time</div>
@@ -1239,10 +1239,10 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         <!-- PAGE 4: REAL-TIME LOG MONITOR -->
         <div id="tab-content-logs" class="__TAB_CONTENT_CLASS_LOGS__">
-            <section class="glass-card rounded-2xl p-6 shadow-xl">
+            <section class=" rounded-2xl p-6 shadow-xl">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 mb-4 border-b border-[#DADCE0]/80 gap-4">
                     <div>
-                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
                             <i data-lucide="terminal" class="w-4 h-4 text-[#1E8E3E]"></i>
                             Real-Time Engine & Telemetry Log Console
                         </h2>
@@ -1253,7 +1253,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                             <i data-lucide="search" class="w-3.5 h-3.5 text-[#80868B] absolute left-3 top-2.5"></i>
                             <input type="text" id="log-search" onkeyup="filterLogs()" placeholder="Search logs (e.g. OPA, CrashLoop)..." class="bg-[#F8F9FA] border border-[#DADCE0] text-xs text-[#202124] pl-8 pr-3 py-1.5 rounded-xl focus:outline-none focus:border-[#1A73E8] w-64 font-mono">
                         </div>
-                        <button onclick="fetchLogs()" class="text-xs font-mono bg-[#F1F3F4]/80 hover:bg-[#E8EAED] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                        <button onclick="fetchLogs()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
                             <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
                             <span>Refresh Logs</span>
                         </button>
@@ -1268,16 +1268,16 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         <!-- PAGE 5: AUDIT HISTORY -->
         <div id="tab-content-history" class="__TAB_CONTENT_CLASS_HISTORY__">
-            <section class="glass-card rounded-2xl p-6 shadow-xl">
+            <section class=" rounded-2xl p-6 shadow-xl">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
-                        <h2 class="text-base font-bold text-white flex items-center gap-2">
-                            <i data-lucide="history" class="w-4 h-4 text-purple-400"></i>
+                        <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
+                            <i data-lucide="history" class="w-4 h-4 text-[#9333EA]"></i>
                             Complete Historical Incident Audit Trail
                         </h2>
                         <p class="text-xs text-[#5F6368] mt-0.5">Filterable historical database of all evaluated alerts, actions, and verification records</p>
                     </div>
-                    <button onclick="fetchHistory()" class="text-xs font-mono bg-[#F1F3F4]/80 hover:bg-[#E8EAED] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                    <button onclick="fetchHistory()" class="text-xs font-mono bg-white hover:bg-[#F8F9FA] text-[#5F6368] px-3.5 py-1.5 rounded-xl border border-[#E8EAED]/80 transition flex items-center gap-1.5">
                         <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
                         <span>Reload History</span>
                     </button>
@@ -1306,9 +1306,9 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         <!-- PAGE 6: CONTROL PLANE SETTINGS -->
         <div id="tab-content-settings" class="__TAB_CONTENT_CLASS_SETTINGS__">
-            <section class="glass-card rounded-2xl p-6 shadow-xl max-w-3xl">
+            <section class=" rounded-2xl p-6 shadow-xl max-w-3xl">
                 <div class="pb-4 mb-6 border-b border-[#DADCE0]/80">
-                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <h2 class="text-base font-bold text-[#202124] flex items-center gap-2">
                         <i data-lucide="settings" class="w-4 h-4 text-[#1A73E8]"></i>
                         Control Plane Engine Settings
                     </h2>
@@ -1317,7 +1317,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
                 <form onsubmit="saveSettings(event)" class="space-y-5">
                     <div>
-                        <label class="block text-xs font-mono text-purple-400 font-bold uppercase mb-1 flex items-center gap-1.5">
+                        <label class="block text-xs font-mono text-[#9333EA] font-bold uppercase mb-1 flex items-center gap-1.5">
                             <i data-lucide="bot" class="w-3.5 h-3.5"></i> Devin AI Autonomous Engineer API Key
                         </label>
                         <input type="password" id="setting-devin-key" placeholder="Paste your Devin API Token (from app.devin.ai/settings)..." class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-xl px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
@@ -1332,7 +1332,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-mono text-sky-400 font-bold uppercase mb-1 flex items-center gap-1.5">
+                            <label class="block text-xs font-mono text-[#1A73E8] font-bold uppercase mb-1 flex items-center gap-1.5">
                                 <i data-lucide="globe" class="w-3.5 h-3.5"></i> Vercel Platform Token
                             </label>
                             <input type="password" id="setting-vercel-token" placeholder="Paste Vercel API Token..." class="w-full bg-[#F8F9FA] border border-[#DADCE0] rounded-xl px-3.5 py-2 text-xs text-[#202124] font-mono focus:outline-none focus:border-[#1A73E8]">
@@ -1361,7 +1361,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                     </div>
 
                     <div class="pt-4 flex justify-end">
-                        <button type="submit" class="bg-[#1A73E8] hover:bg-amber-400 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-amber-500/20 flex items-center gap-2">
+                        <button type="submit" class="bg-[#1A73E8] hover:bg-[#174EA6] text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-amber-500/20 flex items-center gap-2">
                             <i data-lucide="save" class="w-4 h-4"></i>
                             <span>Save Global Configuration</span>
                         </button>
@@ -1396,7 +1396,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 const content = document.getElementById(`tab-content-${t}`);
                 const btn = document.getElementById(`tab-btn-${t}`);
                 if (content) content.classList.add('hidden');
-                if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-semibold transition text-[#5F6368] hover:text-white hover:bg-white/60 border border-transparent flex items-center space-x-2";
+                if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-semibold transition text-[#5F6368] hover:text-[#202124] hover:bg-white/60 border border-transparent flex items-center space-x-2";
             });
 
             const activeContent = document.getElementById(`tab-content-${tab}`);
@@ -1546,20 +1546,20 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
             let html = '';
             for (const w of list) {
-                let providerBadge = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-                if (w.provider === 'vercel') providerBadge = 'bg-sky-500/10 text-sky-400 border-sky-500/20';
+                let providerBadge = 'bg-purple-500/10 text-[#9333EA] border-purple-500/20';
+                if (w.provider === 'vercel') providerBadge = 'bg-sky-500/10 text-[#1A73E8] border-sky-500/20';
                 if (w.provider === 'k8s') providerBadge = 'bg-blue-500/10 text-[#1A73E8] border-blue-500/20';
-                if (w.provider === 'aws') providerBadge = 'bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20';
+                if (w.provider === 'aws') providerBadge = 'bg-transparent text-[#1A73E8] border-[#DADCE0]';
                 if (w.provider === 'gcloud') providerBadge = 'bg-[#1E8E3E]/10 text-[#1E8E3E] border-[#1E8E3E]/20';
 
                 html += `
-                    <div class="glass-card rounded-xl p-5 border border-[#DADCE0]/80 space-y-3">
+                    <div class=" rounded-xl p-5 border border-[#DADCE0]/80 space-y-3">
                         <div class="flex items-start justify-between">
                             <div>
                                 <div class="flex items-center space-x-2">
-                                    <span class="font-bold text-sm text-white">${w.name}</span>
+                                    <span class="font-bold text-sm text-[#202124]">${w.name}</span>
                                     <span class="text-[10px] font-mono px-2 py-0.5 rounded uppercase ${providerBadge}">${w.provider}</span>
-                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1E8E3E]/15 text-emerald-300 border border-emerald-500/30">${w.status}</span>
+                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1E8E3E]/15 text-emerald-300 border border-[#1E8E3E]/30">${w.status}</span>
                                 </div>
                                 <span class="text-xs text-[#5F6368] font-mono block mt-1">Resource ID: ${w.external_id} • Env: ${w.environment}</span>
                             </div>
@@ -1572,10 +1572,10 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                             <div class="flex items-center space-x-1.5 text-[#5F6368]">
                                 <i data-lucide="github" class="w-3.5 h-3.5 text-[#1A73E8]"></i>
                                 <span class="text-[#5F6368]">GitOps Repo:</span>
-                                <span class="text-amber-300 font-bold">${w.github_repo || 'ziuus/cheezer'}</span>
+                                <span class="text-[#1A73E8] font-bold">${w.github_repo || 'ziuus/cheezer'}</span>
                             </div>
                             <div class="flex items-center space-x-1.5 text-[#5F6368]">
-                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-purple-400"></i>
+                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-[#9333EA]"></i>
                                 <span class="text-[#5F6368]">Playbook:</span>
                                 <span class="text-[#202124] truncate" title="${w.custom_instructions}">${w.custom_instructions}</span>
                             </div>
@@ -1712,7 +1712,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                     badgeClass = 'bg-[#1E8E3E]/10 text-[#1E8E3E] border-[#1E8E3E]/20';
                     badgeText = 'HEALTHY';
                 } else if (conn.status === 'TIMEOUT') {
-                    badgeClass = 'bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/20';
+                    badgeClass = 'bg-transparent text-[#1A73E8] border-[#DADCE0]';
                     badgeText = 'TIMEOUT';
                 }
 
@@ -1724,17 +1724,17 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 if (conn.service === 'github') inputPlaceholder = 'Paste GitHub Personal Access Token...';
 
                 html += `
-                    <div class="glass-card rounded-xl p-5 border border-[#DADCE0] space-y-4">
+                    <div class=" rounded-xl p-5 border border-[#DADCE0] space-y-4">
                         <div class="flex items-start justify-between">
                             <div>
                                 <div class="flex items-center space-x-2">
-                                    <span class="font-bold text-sm text-white">${conn.name}</span>
+                                    <span class="font-bold text-sm text-[#202124]">${conn.name}</span>
                                     <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${badgeClass}">${badgeText}</span>
                                     <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white text-[#5F6368] border border-[#DADCE0]">${conn.latency}</span>
                                 </div>
                                 <span class="text-xs text-[#5F6368] font-mono block mt-1">${conn.type}</span>
                             </div>
-                            <button onclick="testConnection('${conn.name}')" class="text-xs font-mono bg-[#F1F3F4] hover:bg-[#E8EAED] text-[#202124] px-3 py-1.5 rounded-xl border border-[#E8EAED] transition flex items-center gap-1.5">
+                            <button onclick="testConnection('${conn.name}')" class="text-xs font-mono bg-[#F1F3F4] hover:bg-[#F8F9FA] text-[#202124] px-3 py-1.5 rounded-xl border border-[#E8EAED] transition flex items-center gap-1.5">
                                 <i data-lucide="zap" class="w-3.5 h-3.5 text-[#1A73E8]"></i>
                                 <span>Test Ping</span>
                             </button>
@@ -1750,7 +1750,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                                 <span class="text-[11px] text-[#5F6368] font-mono w-16">Auth/Key:</span>
                                 <input type="password" id="token-input-${conn.service}" placeholder="${inputPlaceholder}" 
                                        class="flex-1 text-xs bg-[#F8F9FA]/80 text-[#202124] border border-[#DADCE0] rounded-xl px-3 py-2 focus:outline-none focus:border-[#1A73E8]/50 font-mono">
-                                <button onclick="saveAndVerifyToken('${conn.service}', '${conn.name}')" class="text-xs font-mono font-semibold bg-[#1A73E8]/20 hover:bg-[#1A73E8]/30 text-amber-300 border border-[#1A73E8]/40 px-3 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap">
+                                <button onclick="saveAndVerifyToken('${conn.service}', '${conn.name}')" class="text-xs font-mono font-semibold bg-[#1A73E8]/20 hover:bg-[#1A73E8]/30 text-[#1A73E8] border border-[#1A73E8]/40 px-3 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap">
                                     <i data-lucide="key" class="w-3.5 h-3.5"></i>
                                     <span>Save Config</span>
                                 </button>
@@ -1874,10 +1874,10 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             let html = '';
             for (const item of list) {
                 html += `
-                    <tr class="hover:bg-white/40 transition">
+                    <tr class="hover:bg-[#F1F3F4] transition">
                         <td class="py-3 px-4 font-mono text-[#5F6368]">#${item.id}</td>
                         <td class="py-3 px-4 font-mono text-xs text-[#5F6368]">${item.timestamp}</td>
-                        <td class="py-3 px-4 font-semibold text-white">${item.signature}</td>
+                        <td class="py-3 px-4 font-semibold text-[#202124]">${item.signature}</td>
                         <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded bg-[#F1F3F4] text-[#5F6368] font-mono">${item.severity}</span></td>
                         <td class="py-3 px-4 font-mono text-xs text-[#5F6368] uppercase">${item.mode}</td>
                         <td class="py-3 px-4 font-mono text-xs text-[#5F6368]">${item.action}</td>
@@ -1909,7 +1909,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
             let html = '';
             for (const log of logs) {
-                let badgeClass = 'text-sky-400 bg-sky-950/60 border-sky-800';
+                let badgeClass = 'text-[#1A73E8] bg-sky-950/60 border-sky-800';
                 if (log.level === 'WARN') badgeClass = 'text-[#1A73E8] bg-amber-950/60 border-amber-800';
                 if (log.level === 'ERROR') badgeClass = 'text-[#D93025] bg-rose-950/60 border-rose-800';
 
@@ -1976,12 +1976,12 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
             let html = '';
             for (const w of workloads) {
-                let badgeColor = 'bg-sky-500/10 text-sky-400 border-sky-500/30';
+                let badgeColor = 'bg-sky-500/10 text-[#1A73E8] border-sky-500/30';
                 let iconName = 'server';
-                if (w.provider === 'vercel') { badgeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/30'; iconName = 'globe'; }
-                else if (w.provider === 'aws') { badgeColor = 'bg-[#1A73E8]/10 text-[#1A73E8] border-[#1A73E8]/30'; iconName = 'cloud'; }
+                if (w.provider === 'vercel') { badgeColor = 'bg-purple-500/10 text-[#9333EA] border-purple-500/30'; iconName = 'globe'; }
+                else if (w.provider === 'aws') { badgeColor = 'bg-transparent text-[#1A73E8] border-[#DADCE0]'; iconName = 'cloud'; }
                 else if (w.provider === 'gcloud') { badgeColor = 'bg-blue-500/10 text-[#1A73E8] border-blue-500/30'; iconName = 'cpu'; }
-                else if (w.provider === 'render') { badgeColor = 'bg-[#1E8E3E]/10 text-[#1E8E3E] border-emerald-500/30'; iconName = 'layers'; }
+                else if (w.provider === 'render') { badgeColor = 'bg-[#1E8E3E]/10 text-[#1E8E3E] border-[#1E8E3E]/30'; iconName = 'layers'; }
 
                 html += `
                     <div class="bg-[#F8F9FA]/80 border border-[#DADCE0]/90 rounded-xl p-4 space-y-3 hover:border-[#E8EAED] transition">
@@ -1991,11 +1991,11 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                                     <i data-lucide="${iconName}" class="w-4 h-4"></i>
                                 </span>
                                 <div>
-                                    <h4 class="font-bold text-white text-xs">${w.name}</h4>
+                                    <h4 class="font-bold text-[#202124] text-xs">${w.name}</h4>
                                     <p class="text-[11px] text-[#5F6368] font-mono">${w.github_repo || 'No repo bound'}</p>
                                 </div>
                             </div>
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#1E8E3E]/10 text-[#1E8E3E] border border-emerald-500/30">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/30">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ${w.status}
                             </span>
                         </div>
@@ -2003,11 +2003,11 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         <div class="grid grid-cols-4 gap-2 pt-2 border-t border-[#DADCE0]/60 font-mono text-[11px]">
                             <div>
                                 <span class="text-[#80868B] block text-[10px] uppercase">CPU</span>
-                                <span class="text-sky-400 font-bold">${w.cpu_percent}</span>
+                                <span class="text-[#1A73E8] font-bold">${w.cpu_percent}</span>
                             </div>
                             <div>
                                 <span class="text-[#80868B] block text-[10px] uppercase">MEMORY</span>
-                                <span class="text-purple-400 font-bold">${w.memory_mb}</span>
+                                <span class="text-[#9333EA] font-bold">${w.memory_mb}</span>
                             </div>
                             <div>
                                 <span class="text-[#80868B] block text-[10px] uppercase">THROUGHPUT</span>
@@ -2040,7 +2040,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         <div class="flex items-center space-x-3">
                             <i data-lucide="wifi" class="w-4 h-4 text-[#1E8E3E]"></i>
                             <div>
-                                <div class="text-xs font-bold text-white font-mono">${c.name}</div>
+                                <div class="text-xs font-bold text-[#202124] font-mono">${c.name}</div>
                                 <div class="text-[10px] text-[#5F6368] font-mono">${c.endpoint}</div>
                             </div>
                         </div>
@@ -2081,7 +2081,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
                             <span class="text-[#5F6368]">Severity / Mode:</span>
-                            <span class="text-[#202124]">${inc.severity} / <span class="uppercase text-sky-400 font-bold">${inc.mode}</span></span>
+                            <span class="text-[#202124]">${inc.severity} / <span class="uppercase text-[#1A73E8] font-bold">${inc.mode}</span></span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
                             <span class="text-[#5F6368]">Timestamp:</span>
@@ -2093,11 +2093,11 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
                             <span class="text-[#5F6368]">TOCTOU Pre/Post Check:</span>
-                            <span class="text-sky-400">Revalidated state signature match</span>
+                            <span class="text-[#1A73E8]">Revalidated state signature match</span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
                             <span class="text-[#5F6368]">Executed Action:</span>
-                            <span class="text-white font-bold">${inc.action}</span>
+                            <span class="text-[#202124] font-bold">${inc.action}</span>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
                             <span class="text-[#5F6368]">Execution Status:</span>
@@ -2105,7 +2105,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         </div>
                         <div class="flex items-center justify-between border-b border-[#DADCE0]/80 pb-2">
                             <span class="text-[#5F6368]">Floci AWS S3 Audit Object:</span>
-                            <span class="text-purple-400 underline cursor-pointer" onclick="window.open('http://172.18.100.41:4566/cheezer-audit-logs')">s3://cheezer-audit-logs/incidents/inc_${inc.id}.json</span>
+                            <span class="text-[#9333EA] underline cursor-pointer" onclick="window.open('http://172.18.100.41:4566/cheezer-audit-logs')">s3://cheezer-audit-logs/incidents/inc_${inc.id}.json</span>
                         </div>
                     </div>
 
@@ -2174,40 +2174,40 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
 
                 let statusBadge = '';
                 if (inc.status === 'requires_human_intervention') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1A73E8]/10 text-[#1A73E8] border border-[#1A73E8]/30"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Circuit Breaker Locked</span>`;
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-transparent text-[#1A73E8] border border-[#DADCE0]"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Circuit Breaker Locked</span>`;
                 } else if (inc.status === 'executed' || inc.status === 'human_approved_and_executed') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1E8E3E]/10 text-[#1E8E3E] border border-emerald-500/30"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> ${inc.status}</span>`;
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/30"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> ${inc.status}</span>`;
                 } else if (inc.status === 'blocked' || inc.status === 'blocked_by_opa') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#D93025]/10 text-[#D93025] border border-rose-500/30"><i data-lucide="shield-ban" class="w-3.5 h-3.5"></i> ${inc.status}</span>`;
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#D93025]/10 text-[#D93025] border border-[#D93025]/30"><i data-lucide="shield-ban" class="w-3.5 h-3.5"></i> ${inc.status}</span>`;
                 } else {
                     statusBadge = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#F1F3F4] text-[#5F6368] font-mono">${inc.status}</span>`;
                 }
 
                 let modeBadge = `<span class="font-mono text-xs text-[#5F6368] uppercase">${inc.mode}</span>`;
-                if (inc.mode === 'rule') modeBadge = `<span class="font-mono text-xs text-sky-400 font-semibold uppercase flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> RULE</span>`;
-                else if (inc.mode === 'ai') modeBadge = `<span class="font-mono text-xs text-purple-400 font-semibold uppercase flex items-center gap-1"><i data-lucide="cpu" class="w-3 h-3"></i> AI</span>`;
+                if (inc.mode === 'rule') modeBadge = `<span class="font-mono text-xs text-[#1A73E8] font-semibold uppercase flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> RULE</span>`;
+                else if (inc.mode === 'ai') modeBadge = `<span class="font-mono text-xs text-[#9333EA] font-semibold uppercase flex items-center gap-1"><i data-lucide="cpu" class="w-3 h-3"></i> AI</span>`;
                 else if (inc.mode === 'fallback') modeBadge = `<span class="font-mono text-xs text-[#1A73E8] font-semibold uppercase flex items-center gap-1"><i data-lucide="shield" class="w-3 h-3"></i> FALLBACK</span>`;
 
                 let actionBtn = '';
                 if (inc.status === 'requires_human_intervention') {
-                    actionBtn = `<button onclick="approveIncident(${inc.id})" class="bg-[#1A73E8] hover:bg-amber-400 text-white font-bold px-3 py-1 rounded text-xs transition shadow shadow-amber-500/20 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Approve</button>`;
+                    actionBtn = `<button onclick="approveIncident(${inc.id})" class="bg-[#1A73E8] hover:bg-[#174EA6] text-white font-bold px-3 py-1 rounded text-xs transition shadow shadow-amber-500/20 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Approve</button>`;
                 }
 
                 html += `
-                    <tr class="hover:bg-white/40 transition">
+                    <tr class="hover:bg-[#F1F3F4] transition">
                         <td class="py-3 px-4 font-mono text-[#5F6368]">#${inc.id}</td>
                         <td class="py-3 px-4 font-mono text-xs text-[#5F6368]">${inc.timestamp || '-'}</td>
-                        <td class="py-3 px-4 font-semibold text-white">${inc.signature}</td>
+                        <td class="py-3 px-4 font-semibold text-[#202124]">${inc.signature}</td>
                         <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded bg-[#F1F3F4] text-[#5F6368] font-mono">${inc.severity}</span></td>
                         <td class="py-3 px-4">${modeBadge}</td>
                         <td class="py-3 px-4 font-mono text-xs text-[#5F6368]">${inc.action}</td>
                         <td class="py-3 px-4">${statusBadge}</td>
                         <td class="py-3 px-4 text-right flex items-center justify-end space-x-2">
-                            <button onclick="viewIncidentDoc(${inc.id})" class="bg-[#F1F3F4]/80 hover:bg-[#E8EAED] text-amber-300 border border-[#1A73E8]/20 px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono">
+                            <button onclick="viewIncidentDoc(${inc.id})" class="bg-white hover:bg-[#F8F9FA] text-[#1A73E8] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono">
                                 <i data-lucide="file-text" class="w-3 h-3 text-[#1A73E8]"></i> Doc
                             </button>
-                            <button onclick="dispatchDevin(${inc.id})" class="bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-500/40 px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono font-bold shadow shadow-purple-500/20">
-                                <i data-lucide="bot" class="w-3 h-3 text-purple-400"></i> Devin AI Fix
+                            <button onclick="dispatchDevin(${inc.id})" class="bg-white hover:bg-[#F8F9FA] text-[#9333EA] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono font-bold shadow shadow-sm">
+                                <i data-lucide="bot" class="w-3 h-3 text-[#9333EA]"></i> Devin AI Fix
                             </button>
                             ${actionBtn}
                         </td>
@@ -2233,10 +2233,10 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
             let html = '';
             for (const rem of list) {
                 html += `
-                    <tr class="hover:bg-white/40 transition">
+                    <tr class="hover:bg-[#F1F3F4] transition">
                         <td class="py-2.5 px-4 font-mono text-[#5F6368]">#${rem.id}</td>
                         <td class="py-2.5 px-4 font-mono text-[#5F6368]">#${rem.incident_id}</td>
-                        <td class="py-2.5 px-4 font-mono text-sky-400 font-semibold">${rem.resource}</td>
+                        <td class="py-2.5 px-4 font-mono text-[#1A73E8] font-semibold">${rem.resource}</td>
                         <td class="py-2.5 px-4 font-mono text-xs text-[#5F6368]">${rem.action}</td>
                         <td class="py-2.5 px-4 font-mono text-xs text-[#5F6368]">${rem.timestamp}</td>
                     </tr>
