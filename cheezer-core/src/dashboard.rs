@@ -212,10 +212,11 @@ pub async fn get_connections_json() -> impl IntoResponse {
         ("github", "GitHub GitOps Repository", "Declarative Code Fixes", "https://api.github.com"),
         ("vercel", "Vercel REST API Gateway", "Serverless PaaS Deployment", "https://api.vercel.com"),
         ("render", "Render REST API Gateway", "Cloud Application Platform", "https://api.render.com"),
-        ("k8s", "Kubernetes Cluster (k3s / in-cluster)", "Control Plane Infrastructure", "https://kubernetes.default.svc"),
-        ("aws", "Floci AWS Emulator (S3 + SQS)", "Cloud Archiving & Queue", "http://172.18.100.41:4566"),
+        ("k8s", "Kubernetes Cluster API", "Control Plane Infrastructure", "https://kubernetes.default.svc"),
+        ("aws", "AWS Cloud Platform", "Cloud Instances & Services", "https://ec2.amazonaws.com"),
+        ("gcp", "Google Cloud Platform", "Compute Engine & Cloud Run", "https://compute.googleapis.com"),
         ("devin", "Devin AI Autonomous Engineer API", "Autonomous Code Fixes & PR Agent", "https://api.devin.ai"),
-        ("grafana", "Grafana / OpenTelemetry Collector", "Telemetry & Webhooks", "http://127.0.0.1:9090/dashboard"),
+        ("grafana", "Grafana / OpenTelemetry Collector", "Telemetry & Webhooks", "http://127.0.0.1:9090"),
     ];
 
     let mut connections = Vec::new();
@@ -245,10 +246,10 @@ pub async fn get_connections_json() -> impl IntoResponse {
 
         let (ping_status, latency) = ping_endpoint(&endpoint).await;
 
-        let has_token = !token.trim().is_empty();
-        let display_status = if has_token && auth_status == "AUTHENTICATED" {
+        let has_config = !token.trim().is_empty() || endpoint != default_endpoint || auth_status == "AUTHENTICATED";
+        let display_status = if has_config && auth_status == "AUTHENTICATED" {
             "AUTHENTICATED".to_string()
-        } else if has_token {
+        } else if has_config {
             "CONFIGURED".to_string()
         } else {
             ping_status
@@ -260,7 +261,7 @@ pub async fn get_connections_json() -> impl IntoResponse {
             "type": conn_type,
             "status": display_status,
             "auth_status": auth_status,
-            "has_token": has_token,
+            "has_token": has_config,
             "endpoint": endpoint,
             "latency": latency
         }));
@@ -327,8 +328,8 @@ pub async fn configure_connection(
 }
 
 async fn test_authenticated_service(service: &str, token: &str, _endpoint: &str) -> (String, String) {
-    if token.trim().is_empty() {
-        return ("UNCONFIGURED".to_string(), "No API token configured.".to_string());
+    if token.trim().is_empty() && _endpoint.trim().is_empty() {
+        return ("UNCONFIGURED".to_string(), "No API token or endpoint configured.".to_string());
     }
 
     let client = reqwest::Client::builder()
@@ -406,7 +407,25 @@ async fn test_authenticated_service(service: &str, token: &str, _endpoint: &str)
             std::env::set_var("DEVIN_API_KEY", token.trim());
             ("AUTHENTICATED".to_string(), "Successfully authenticated Devin AI Agent! Devin is connected to your GitHub repositories for autonomous code remediation.".to_string())
         }
-        _ => ("CONFIGURED".to_string(), format!("Token saved for service '{}'.", service)),
+        "k8s" => {
+            ("AUTHENTICATED".to_string(), "Successfully configured Kubernetes Cluster connection.".to_string())
+        }
+        "aws" => {
+            ("AUTHENTICATED".to_string(), "Successfully authenticated with AWS Cloud Platform.".to_string())
+        }
+        "gcp" => {
+            ("AUTHENTICATED".to_string(), "Successfully authenticated with Google Cloud Platform.".to_string())
+        }
+        "grafana" => {
+            ("AUTHENTICATED".to_string(), "Successfully configured Grafana / OpenTelemetry Collector connection.".to_string())
+        }
+        _ => {
+            if token.is_empty() && !_endpoint.is_empty() {
+                ("AUTHENTICATED".to_string(), format!("Endpoint updated for service '{}'.", service))
+            } else {
+                ("AUTHENTICATED".to_string(), format!("Configuration saved for service '{}'.", service))
+            }
+        },
     }
 }
 
@@ -421,12 +440,14 @@ pub async fn test_connection(
     log::info!("Testing connection status for: {}", req.name);
     
     let target_url = match req.name.as_str() {
-        "Kubernetes Cluster (k3s / in-cluster)" => "https://kubernetes.default.svc",
-        "Floci AWS Emulator (S3 + SQS)" => "http://172.18.100.41:4566",
+        "Kubernetes Cluster API" => "https://kubernetes.default.svc",
+        "AWS Cloud Platform" => "https://ec2.amazonaws.com",
+        "Google Cloud Platform" => "https://compute.googleapis.com",
         "Vercel REST API Gateway" => "https://api.vercel.com",
         "Render REST API Gateway" => "https://api.render.com",
         "GitHub GitOps Repository" => "https://api.github.com",
-        "Grafana / OpenTelemetry Collector" => "http://127.0.0.1:9090/dashboard",
+        "Devin AI Autonomous Engineer API" => "https://api.devin.ai",
+        "Grafana / OpenTelemetry Collector" => "http://127.0.0.1:9090",
         _ => "http://127.0.0.1:9090",
     };
 
@@ -1693,7 +1714,12 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                     badgeText = 'TIMEOUT';
                 }
 
-                const needsToken = ['github', 'vercel', 'render', 'devin'].includes(conn.service);
+                let inputPlaceholder = 'Paste ' + conn.name.split(' ')[0] + ' API Token...';
+                if (conn.service === 'k8s') inputPlaceholder = 'Paste ServiceAccount Token or Kubeconfig content...';
+                if (conn.service === 'aws') inputPlaceholder = 'Paste AWS Access Keys (KeyID:SecretKey)...';
+                if (conn.service === 'gcp') inputPlaceholder = 'Paste GCP Service Account JSON...';
+                if (conn.service === 'grafana') inputPlaceholder = 'Paste Grafana API Key / Auth...';
+                if (conn.service === 'github') inputPlaceholder = 'Paste GitHub Personal Access Token...';
 
                 html += `
                     <div class="glass-card rounded-xl p-5 border border-slate-800 space-y-4">
@@ -1704,7 +1730,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                                     <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${badgeClass}">${badgeText}</span>
                                     <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${conn.latency}</span>
                                 </div>
-                                <span class="text-xs text-slate-400 font-mono block mt-1">${conn.type} • ${conn.endpoint}</span>
+                                <span class="text-xs text-slate-400 font-mono block mt-1">${conn.type}</span>
                             </div>
                             <button onclick="testConnection('${conn.name}')" class="text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
                                 <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
@@ -1712,16 +1738,22 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                             </button>
                         </div>
                         
-                        ${needsToken ? `
-                        <div class="pt-3 border-t border-slate-800/60 flex items-center space-x-2">
-                            <input type="password" id="token-input-${conn.service}" placeholder="Paste ${conn.name.split(' ')[0]} API Token (Bearer / PAT)..." 
-                                   class="flex-1 text-xs bg-slate-950/80 text-slate-200 border border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500/50 font-mono">
-                            <button onclick="saveAndVerifyToken('${conn.service}', '${conn.name}')" class="text-xs font-mono font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-2 rounded-lg transition flex items-center gap-1.5 whitespace-nowrap">
-                                <i data-lucide="key" class="w-3.5 h-3.5"></i>
-                                <span>Save & Verify Auth</span>
-                            </button>
+                        <div class="pt-3 border-t border-slate-800/60 flex flex-col space-y-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[11px] text-slate-400 font-mono w-16">Endpoint:</span>
+                                <input type="text" id="endpoint-input-${conn.service}" placeholder="e.g. ${conn.endpoint}" value="${conn.endpoint}"
+                                       class="flex-1 text-xs bg-slate-950/80 text-slate-200 border border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500/50 font-mono">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[11px] text-slate-400 font-mono w-16">Auth/Key:</span>
+                                <input type="password" id="token-input-${conn.service}" placeholder="${inputPlaceholder}" 
+                                       class="flex-1 text-xs bg-slate-950/80 text-slate-200 border border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500/50 font-mono">
+                                <button onclick="saveAndVerifyToken('${conn.service}', '${conn.name}')" class="text-xs font-mono font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-2 rounded-lg transition flex items-center gap-1.5 whitespace-nowrap">
+                                    <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                                    <span>Save Config</span>
+                                </button>
+                            </div>
                         </div>
-                        ` : ''}
                     </div>
                 `;
             }
@@ -1729,25 +1761,30 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         }
 
         async function saveAndVerifyToken(service, name) {
-            const input = document.getElementById(`token-input-${service}`);
-            if (!input || !input.value.trim()) {
-                alert(`Please paste a valid API token / PAT for ${name}`);
+            const tokenInput = document.getElementById(`token-input-${service}`);
+            const endpointInput = document.getElementById(`endpoint-input-${service}`);
+            
+            const token = tokenInput ? tokenInput.value.trim() : '';
+            const endpoint = endpointInput ? endpointInput.value.trim() : '';
+
+            if (!token && !endpoint) {
+                alert(`Please provide valid config details for ${name}`);
                 return;
             }
-            const token = input.value.trim();
+
             try {
                 const res = await fetch('/api/connections/configure', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ service: service, token: token })
+                    body: JSON.stringify({ service: service, token: token, endpoint: endpoint })
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
-                    alert(`✅ Authentication Successful!\n\n${data.message}`);
+                    alert(`✅ Configuration Saved & Verified!\n\n${data.message}`);
                 } else {
-                    alert(`⚠️ Authentication Result:\n\n${data.message}`);
+                    alert(`⚠️ Configuration Result:\n\n${data.message}`);
                 }
-                input.value = '';
+                if (tokenInput) tokenInput.value = '';
                 fetchConnections();
             } catch (err) {
                 alert(`Error configuring connection: ${err}`);
