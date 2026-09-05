@@ -116,27 +116,28 @@ pub async fn get_metrics_json() -> impl IntoResponse {
     let targets = store::get_monitored_targets().unwrap_or_default();
     let mut workloads = vec![];
 
-    let system_targets = vec![
-        ("flaky-order-service", "flaky-order-service (Deployment)", "k8s", "demo", "ziuus/order-microservice", "HEALTHY", "1.2%", "58 MB", "48 req/s", "0.0%"),
-        ("cheezer-core", "cheezer-core (Deployment)", "k8s", "demo", "ziuus/cheezer", "HEALTHY", "0.8%", "34 MB", "14 req/s", "0.0%"),
-        ("vercel-frontend", "production-storefront (Vercel)", "vercel", "prd_9812", "ziuus/storefront", "HEALTHY", "0.4%", "22 MB", "120 req/s", "0.0%"),
-        ("floci-order-processor", "floci-order-processor (AWS)", "aws", "us-east-1", "ziuus/order-processor", "HEALTHY", "2.8%", "112 MB", "95 req/s", "0.0%"),
-        ("billing-api-service", "billing-api-service (Cloud Run)", "gcloud", "us-central1", "ziuus/billing-api", "HEALTHY", "0.6%", "42 MB", "8 req/s", "0.0%"),
-    ];
-
-    for (id, name, provider, env, repo, status, cpu, mem, rps, err) in system_targets {
-        workloads.push(json!({
-            "id": id,
-            "name": name,
-            "provider": provider,
-            "environment": env,
-            "github_repo": repo,
-            "status": status,
-            "cpu_percent": cpu,
-            "memory_mb": mem,
-            "requests_per_sec": rps,
-            "error_rate": err,
-        }));
+    if let Ok(client) = kube::Client::try_default().await {
+        use k8s_openapi::api::apps::v1::Deployment;
+        use kube::api::Api;
+        let deployments: Api<Deployment> = Api::all(client);
+        if let Ok(list) = deployments.list(&Default::default()).await {
+            for d in list.items {
+                if let Some(name) = d.metadata.name {
+                    workloads.push(json!({
+                        "id": name,
+                        "name": format!("{} (Deployment)", name),
+                        "provider": "k8s",
+                        "environment": d.metadata.namespace.unwrap_or_else(|| "default".to_string()),
+                        "github_repo": "ziuus/cheezer",
+                        "status": "HEALTHY",
+                        "cpu_percent": "0.8%",
+                        "memory_mb": "34 MB",
+                        "requests_per_sec": "14 req/s",
+                        "error_rate": "0.0%",
+                    }));
+                }
+            }
+        }
     }
 
     for t in targets {
@@ -147,22 +148,21 @@ pub async fn get_metrics_json() -> impl IntoResponse {
                 "provider": t.provider,
                 "environment": t.environment,
                 "github_repo": t.github_repo,
-                "status": "HEALTHY",
-                "cpu_percent": format!("{:.1}%", (t.id as f64 * 3.7 % 5.0) + 0.5),
-                "memory_mb": format!("{} MB", 40 + (t.id * 13 % 120)),
-                "requests_per_sec": format!("{} req/s", 15 + (t.id * 19 % 110)),
+                "status": t.status,
+                "cpu_percent": "0.5%",
+                "memory_mb": "42 MB",
+                "requests_per_sec": "24 req/s",
                 "error_rate": "0.0%",
             }));
         }
     }
 
     let connections = vec![
-        json!({ "name": "GitHub Auth API", "provider": "github", "status": "CONNECTED", "latency": "84ms", "endpoint": "https://api.github.com", "auth": "OAuth / Personal Access Token" }),
-        json!({ "name": "Vercel Platform API", "provider": "vercel", "status": "CONNECTED", "latency": "112ms", "endpoint": "https://api.vercel.com", "auth": "Bearer Token (vc_***)" }),
-        json!({ "name": "Render PaaS API", "provider": "render", "status": "CONNECTED", "latency": "96ms", "endpoint": "https://api.render.com", "auth": "Bearer Token (rnd_***)" }),
-        json!({ "name": "Kubernetes API Server", "provider": "k8s", "status": "CONNECTED", "latency": "2ms", "endpoint": "https://kubernetes.default.svc", "auth": "ServiceAccount Token" }),
-        json!({ "name": "AWS Localstack (Floci)", "provider": "aws", "status": "CONNECTED", "latency": "4ms", "endpoint": "http://172.18.100.41:4566", "auth": "IAM Access Key (FLOCI_***)" }),
-        json!({ "name": "Google Cloud Run Gateway", "provider": "gcloud", "status": "CONNECTED", "latency": "68ms", "endpoint": "https://run.googleapis.com", "auth": "GCP Service Account" })
+        json!({ "name": "GitHub Auth API", "provider": "github", "status": if store::get_credential("github").ok().flatten().is_some() || std::env::var("GITHUB_TOKEN").is_ok() { "AUTHENTICATED" } else { "UNCONFIGURED" }, "latency": "84ms", "endpoint": "https://api.github.com", "auth": "OAuth / Personal Access Token" }),
+        json!({ "name": "Vercel Platform API", "provider": "vercel", "status": if store::get_credential("vercel").ok().flatten().is_some() || std::env::var("VERCEL_TOKEN").is_ok() { "AUTHENTICATED" } else { "UNCONFIGURED" }, "latency": "112ms", "endpoint": "https://api.vercel.com", "auth": "Bearer Token" }),
+        json!({ "name": "Render PaaS API", "provider": "render", "status": if store::get_credential("render").ok().flatten().is_some() || std::env::var("RENDER_TOKEN").is_ok() { "AUTHENTICATED" } else { "UNCONFIGURED" }, "latency": "96ms", "endpoint": "https://api.render.com", "auth": "Bearer Token" }),
+        json!({ "name": "Kubernetes API Server", "provider": "k8s", "status": "AUTHENTICATED", "latency": "2ms", "endpoint": "https://kubernetes.default.svc", "auth": "In-Cluster ServiceAccount Token" }),
+        json!({ "name": "Devin AI Autonomous Agent API", "provider": "devin", "status": if store::get_credential("devin").ok().flatten().is_some() || std::env::var("DEVIN_API_KEY").is_ok() { "AUTHENTICATED" } else { "UNCONFIGURED" }, "latency": "32ms", "endpoint": "https://api.devin.ai", "auth": "Bearer Token" })
     ];
 
     Json(json!({

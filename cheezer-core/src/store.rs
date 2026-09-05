@@ -132,46 +132,6 @@ pub fn init_db() -> Result<()> {
         [],
     )?;
     
-    seed_default_data(&conn)?;
-
-    Ok(())
-}
-
-fn seed_default_data(conn: &Connection) -> Result<()> {
-    let incident_count: i64 = conn.query_row("SELECT COUNT(*) FROM incidents", [], |row| row.get(0)).unwrap_or(0);
-    if incident_count == 0 {
-        conn.execute(
-            "INSERT INTO incidents (signature, severity, mode, action, status, verification_result, timestamp) VALUES 
-            ('CrashLoopBackOff', 'critical', 'rule', 'restart deployment flaky-order-service', 'executed', 'TOCTOU check passed. Target status returned HTTP 200 OK.', '2026-09-05 15:30:10'),
-            ('HighMemoryUtilization', 'warning', 'ai', 'scale deployment floci-order-processor --replicas=3', 'executed', 'Resource utilization normalized to 45%.', '2026-09-05 16:12:45'),
-            ('UnauthorizedDeleteNamespace', 'critical', 'rule', 'delete namespace production', 'blocked_by_opa', 'OPA Policy Engine Gate: Action DENIED (Fail-Closed).', '2026-09-05 16:45:00'),
-            ('CascadingDatabaseTimeout', 'critical', 'ai', 'restart deployment billing-api-service', 'requires_human_intervention', 'Circuit Breaker Engaged: Awaiting Operator Approval.', '2026-09-05 17:10:30'),
-            ('VercelEdgeDeploymentError', 'warning', 'rule', 'rollback vercel deployment prj_storefront992', 'executed', 'Vercel edge active. HTTP 200 OK.', '2026-09-05 17:28:15')",
-            [],
-        )?;
-
-        conn.execute(
-            "INSERT INTO remediation_history (incident_id, resource, action, timestamp) VALUES 
-            (1, 'flaky-order-service', 'restart deployment flaky-order-service', '2026-09-05 15:30:12'),
-            (2, 'floci-order-processor', 'scale deployment floci-order-processor --replicas=3', '2026-09-05 16:12:48'),
-            (5, 'production-storefront', 'rollback vercel deployment prj_storefront992', '2026-09-05 17:28:18')",
-            [],
-        )?;
-    }
-
-    let watcher_count: i64 = conn.query_row("SELECT COUNT(*) FROM monitored_targets", [], |row| row.get(0)).unwrap_or(0);
-    if watcher_count == 0 {
-        conn.execute(
-            "INSERT INTO monitored_targets (name, provider, external_id, environment, github_repo, custom_instructions, status) VALUES 
-            ('flaky-order-service (Deployment)', 'k8s', 'flaky-order-service', 'demo', 'ziuus/order-microservice', 'Restart deployment on CrashLoopBackOff & 5xx HTTP spikes', 'WATCHING'),
-            ('cheezer-core (Control Plane)', 'k8s', 'cheezer-core', 'demo', 'ziuus/cheezer', 'Self-remediate OPA policy violations and monitor system health', 'WATCHING'),
-            ('production-storefront (Vercel Web)', 'vercel', 'prj_storefront992', 'production', 'ziuus/storefront', 'Rollback Vercel deployment on 502/504 edge errors', 'WATCHING'),
-            ('floci-order-processor (AWS)', 'aws', 'floci-order-processor', 'us-east-1', 'ziuus/order-processor', 'Autoscale SQS workers and clear stuck queues', 'WATCHING'),
-            ('billing-api-service (Cloud Run)', 'gcloud', 'billing-api-service', 'us-central1', 'ziuus/billing-api', 'Redeploy Cloud Run revision on memory leak detection', 'WATCHING')",
-            [],
-        )?;
-    }
-
     Ok(())
 }
 
