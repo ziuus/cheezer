@@ -315,6 +315,7 @@ dependencies = [
  "log",
  "reqwest",
  "rusqlite",
+ "rustls",
  "serde",
  "serde_json",
  "tokio",

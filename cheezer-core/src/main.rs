@@ -16,6 +16,7 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     env_logger::init();
     
     let args: Vec<String> = env::args().collect();

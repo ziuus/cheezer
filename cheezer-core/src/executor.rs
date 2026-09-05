@@ -43,6 +43,7 @@ impl From<kube::Error> for ExecutionError {
 }
 
 pub async fn revalidate_state(action: &Action) -> Result<(), ExecutionError> {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     if std::env::var("MOCK_EXECUTOR").unwrap_or_default() == "true" {
         if std::env::var("MOCK_STALE_STATE").unwrap_or_default() == "true" {
             log::warn!("[MOCK EXECUTOR] TOCTOU Revalidation ABORT: Target resource self-resolved to Running & Ready");
@@ -164,6 +165,7 @@ pub async fn verify_recovery(action: &Action) -> Result<bool, ExecutionError> {
 }
 
 pub async fn apply_action(action: &Action, _alert: &Alert) -> Result<(), ExecutionError> {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     if std::env::var("MOCK_EXECUTOR").unwrap_or_default() == "true" {
         log::info!("[MOCK EXECUTOR] Action '{:?}' simulated successfully", action);
         return Ok(());
