@@ -109,29 +109,178 @@ async fn ping_endpoint(endpoint_url: &str) -> (String, String) {
 }
 
 pub async fn get_connections_json() -> impl IntoResponse {
-    let endpoints = vec![
-        ("Kubernetes Cluster (k3s / in-cluster)", "Control Plane Infrastructure", "https://kubernetes.default.svc"),
-        ("Floci AWS Emulator (S3 + SQS)", "Cloud Archiving & Queue", "http://172.18.100.41:4566"),
-        ("Vercel REST API Gateway", "Serverless PaaS Deployment", "https://api.vercel.com"),
-        ("Render REST API Gateway", "Cloud Application Platform", "https://api.render.com"),
-        ("GitHub GitOps Repository", "Declarative Code Fixes", "https://api.github.com"),
-        ("Grafana / OpenTelemetry Collector", "Telemetry & Webhooks", "http://127.0.0.1:9090/dashboard"),
+    let services = vec![
+        ("github", "GitHub GitOps Repository", "Declarative Code Fixes", "https://api.github.com"),
+        ("vercel", "Vercel REST API Gateway", "Serverless PaaS Deployment", "https://api.vercel.com"),
+        ("render", "Render REST API Gateway", "Cloud Application Platform", "https://api.render.com"),
+        ("k8s", "Kubernetes Cluster (k3s / in-cluster)", "Control Plane Infrastructure", "https://kubernetes.default.svc"),
+        ("aws", "Floci AWS Emulator (S3 + SQS)", "Cloud Archiving & Queue", "http://172.18.100.41:4566"),
+        ("grafana", "Grafana / OpenTelemetry Collector", "Telemetry & Webhooks", "http://127.0.0.1:9090/dashboard"),
     ];
 
     let mut connections = Vec::new();
 
-    for (name, conn_type, endpoint) in endpoints {
-        let (status, latency) = ping_endpoint(endpoint).await;
+    for (service_id, name, conn_type, default_endpoint) in services {
+        let saved_cred = store::get_credential(service_id).unwrap_or(None);
+        let env_token = match service_id {
+            "github" => std::env::var("GITHUB_TOKEN").ok(),
+            "vercel" => std::env::var("VERCEL_TOKEN").ok(),
+            "render" => std::env::var("RENDER_TOKEN").ok(),
+            _ => None,
+        };
+
+        let (token, endpoint, auth_status) = if let Some((t, ep, st)) = saved_cred {
+            let ep_final = if ep.is_empty() { default_endpoint.to_string() } else { ep };
+            (t, ep_final, st)
+        } else if let Some(t) = env_token {
+            if !t.trim().is_empty() {
+                (t, default_endpoint.to_string(), "CONFIGURED".to_string())
+            } else {
+                ("".to_string(), default_endpoint.to_string(), "UNCONFIGURED".to_string())
+            }
+        } else {
+            ("".to_string(), default_endpoint.to_string(), "UNCONFIGURED".to_string())
+        };
+
+        let (ping_status, latency) = ping_endpoint(&endpoint).await;
+
+        let has_token = !token.trim().is_empty();
+        let display_status = if has_token && auth_status == "AUTHENTICATED" {
+            "AUTHENTICATED".to_string()
+        } else if has_token {
+            "CONFIGURED".to_string()
+        } else {
+            ping_status
+        };
+
         connections.push(json!({
+            "service": service_id,
             "name": name,
             "type": conn_type,
-            "status": status,
+            "status": display_status,
+            "auth_status": auth_status,
+            "has_token": has_token,
             "endpoint": endpoint,
             "latency": latency
         }));
     }
 
     Json(json!({ "connections": connections }))
+}
+
+#[derive(serde::Deserialize)]
+pub struct ConfigureConnectionRequest {
+    pub service: String,
+    pub token: String,
+    pub endpoint: Option<String>,
+}
+
+pub async fn configure_connection(
+    Json(req): Json<ConfigureConnectionRequest>
+) -> impl IntoResponse {
+    let service_id = req.service.to_lowercase();
+    let endpoint = req.endpoint.unwrap_or_default();
+    log::info!("Saving credential and testing authentication for service: {}", service_id);
+
+    let (auth_status, message) = test_authenticated_service(&service_id, &req.token, &endpoint).await;
+
+    let db_status = if auth_status == "AUTHENTICATED" { "AUTHENTICATED" } else { "INVALID_TOKEN" };
+    let _ = store::save_credential(&service_id, &req.token, &endpoint, db_status);
+
+    if service_id == "github" {
+        std::env::set_var("GITHUB_TOKEN", req.token.trim());
+    } else if service_id == "vercel" {
+        std::env::set_var("VERCEL_TOKEN", req.token.trim());
+    } else if service_id == "render" {
+        std::env::set_var("RENDER_TOKEN", req.token.trim());
+    }
+
+    Json(json!({
+        "status": if auth_status == "AUTHENTICATED" { "success" } else { "error" },
+        "service": service_id,
+        "auth_status": auth_status,
+        "message": message
+    }))
+}
+
+async fn test_authenticated_service(service: &str, token: &str, _endpoint: &str) -> (String, String) {
+    if token.trim().is_empty() {
+        return ("UNCONFIGURED".to_string(), "No API token configured.".to_string());
+    }
+
+    let client = reqwest::Client::builder()
+        .user_agent("cheezer-core-operator")
+        .danger_accept_invalid_certs(true)
+        .timeout(std::time::Duration::from_secs(4))
+        .build();
+
+    let c = match client {
+        Ok(c) => c,
+        Err(e) => return ("ERROR".to_string(), format!("Client build error: {}", e)),
+    };
+
+    match service {
+        "github" => {
+            let res = c.get("https://api.github.com/user")
+                .header("Authorization", format!("Bearer {}", token.trim()))
+                .header("Accept", "application/vnd.github+json")
+                .send()
+                .await;
+
+            match res {
+                Ok(resp) if resp.status().is_success() => {
+                    if let Ok(v) = resp.json::<serde_json::Value>().await {
+                        let login = v.get("login").and_then(|l| l.as_str()).unwrap_or("user");
+                        ("AUTHENTICATED".to_string(), format!("Successfully authenticated with GitHub as @{}!", login))
+                    } else {
+                        ("AUTHENTICATED".to_string(), "Successfully authenticated with GitHub API!".to_string())
+                    }
+                }
+                Ok(resp) => {
+                    ("INVALID_TOKEN".to_string(), format!("GitHub API returned HTTP {} (Invalid Personal Access Token)", resp.status()))
+                }
+                Err(e) => ("ERROR".to_string(), format!("Network probe failed: {}", e)),
+            }
+        }
+        "vercel" => {
+            let res = c.get("https://api.vercel.com/v2/user")
+                .header("Authorization", format!("Bearer {}", token.trim()))
+                .send()
+                .await;
+
+            match res {
+                Ok(resp) if resp.status().is_success() => {
+                    if let Ok(v) = resp.json::<serde_json::Value>().await {
+                        let user = v.get("user").and_then(|u| u.get("username")).and_then(|s| s.as_str()).unwrap_or("vercel_user");
+                        ("AUTHENTICATED".to_string(), format!("Successfully authenticated with Vercel API as '{}'!", user))
+                    } else {
+                        ("AUTHENTICATED".to_string(), "Successfully authenticated with Vercel API!".to_string())
+                    }
+                }
+                Ok(resp) => {
+                    ("INVALID_TOKEN".to_string(), format!("Vercel API returned HTTP {} (Invalid API Token)", resp.status()))
+                }
+                Err(e) => ("ERROR".to_string(), format!("Network probe failed: {}", e)),
+            }
+        }
+        "render" => {
+            let res = c.get("https://api.render.com/v1/owners")
+                .header("Authorization", format!("Bearer {}", token.trim()))
+                .send()
+                .await;
+
+            match res {
+                Ok(resp) if resp.status().is_success() => {
+                    ("AUTHENTICATED".to_string(), "Successfully authenticated with Render REST API!".to_string())
+                }
+                Ok(resp) => {
+                    ("INVALID_TOKEN".to_string(), format!("Render API returned HTTP {} (Invalid API Key)", resp.status()))
+                }
+                Err(e) => ("ERROR".to_string(), format!("Network probe failed: {}", e)),
+            }
+        }
+        _ => ("CONFIGURED".to_string(), format!("Token saved for service '{}'.", service)),
+    }
 }
 
 #[derive(serde::Deserialize)]
@@ -811,22 +960,84 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             const container = document.getElementById('connections-list');
             let html = '';
             for (const conn of list) {
+                const isAuth = conn.status === 'AUTHENTICATED';
+                const isConfigured = conn.status === 'CONFIGURED' || conn.has_token;
+
+                let badgeClass = 'bg-slate-800 text-slate-400 border-slate-700';
+                let badgeText = conn.status;
+                if (isAuth) {
+                    badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold';
+                    badgeText = '🔑 AUTHENTICATED';
+                } else if (isConfigured) {
+                    badgeClass = 'bg-sky-500/20 text-sky-300 border-sky-500/40';
+                    badgeText = '⚙️ TOKEN SAVED';
+                } else if (conn.status === 'HEALTHY') {
+                    badgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                    badgeText = 'HEALTHY';
+                } else if (conn.status === 'TIMEOUT') {
+                    badgeClass = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                    badgeText = 'TIMEOUT';
+                }
+
+                const needsToken = ['github', 'vercel', 'render'].includes(conn.service);
+
                 html += `
-                    <div class="glass-card rounded-xl p-5 border border-slate-800 flex items-center justify-between">
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="font-bold text-sm text-white">${conn.name}</span>
-                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${conn.status}</span>
+                    <div class="glass-card rounded-xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-sm text-white">${conn.name}</span>
+                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${badgeClass}">${badgeText}</span>
+                                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${conn.latency}</span>
+                                </div>
+                                <span class="text-xs text-slate-400 font-mono block mt-1">${conn.type} • ${conn.endpoint}</span>
                             </div>
-                            <span class="text-xs text-slate-400 font-mono block mt-1">${conn.type} • ${conn.endpoint}</span>
+                            <button onclick="testConnection('${conn.name}')" class="text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i>
+                                <span>Test Ping</span>
+                            </button>
                         </div>
-                        <button onclick="testConnection('${conn.name}')" class="text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition">
-                            Test Ping
-                        </button>
+                        
+                        ${needsToken ? `
+                        <div class="pt-3 border-t border-slate-800/60 flex items-center space-x-2">
+                            <input type="password" id="token-input-${conn.service}" placeholder="Paste ${conn.name.split(' ')[0]} API Token (Bearer / PAT)..." 
+                                   class="flex-1 text-xs bg-slate-950/80 text-slate-200 border border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500/50 font-mono">
+                            <button onclick="saveAndVerifyToken('${conn.service}', '${conn.name}')" class="text-xs font-mono font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-3 py-2 rounded-lg transition flex items-center gap-1.5 whitespace-nowrap">
+                                <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                                <span>Save & Verify Auth</span>
+                            </button>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
             }
             container.innerHTML = html;
+        }
+
+        async function saveAndVerifyToken(service, name) {
+            const input = document.getElementById(`token-input-${service}`);
+            if (!input || !input.value.trim()) {
+                alert(`Please paste a valid API token / PAT for ${name}`);
+                return;
+            }
+            const token = input.value.trim();
+            try {
+                const res = await fetch('/api/connections/configure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ service: service, token: token })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert(`✅ Authentication Successful!\n\n${data.message}`);
+                } else {
+                    alert(`⚠️ Authentication Result:\n\n${data.message}`);
+                }
+                input.value = '';
+                fetchConnections();
+            } catch (err) {
+                alert(`Error configuring connection: ${err}`);
+            }
         }
 
         async function testConnection(name) {

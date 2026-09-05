@@ -35,6 +35,7 @@ pub fn create_router() -> Router {
         .route("/api/metrics", get(dashboard::get_metrics_json))
         .route("/api/connections", get(dashboard::get_connections_json))
         .route("/api/connections/test", post(dashboard::test_connection))
+        .route("/api/connections/configure", post(dashboard::configure_connection))
         .route("/api/settings", get(dashboard::get_settings_json))
         .route("/api/settings", post(dashboard::update_settings_json))
         .route("/api/history", get(dashboard::get_history_json))

@@ -92,6 +92,17 @@ pub fn init_db() -> Result<()> {
         )",
         [],
     )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS credentials (
+            service TEXT PRIMARY KEY,
+            token TEXT NOT NULL,
+            endpoint TEXT,
+            status TEXT DEFAULT 'CONFIGURED',
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
     
     Ok(())
 }
@@ -320,6 +331,29 @@ pub fn log_action(alert_id: i64, mode: &str, action: &str) -> Result<()> {
         rusqlite::params![alert_id, mode, action],
     )?;
     Ok(())
+}
+
+pub fn save_credential(service: &str, token: &str, endpoint: &str, status: &str) -> Result<()> {
+    let conn = get_db().lock().unwrap();
+    conn.execute(
+        "INSERT INTO credentials (service, token, endpoint, status, updated_at)
+         VALUES (?1, ?2, ?3, ?4, CURRENT_TIMESTAMP)
+         ON CONFLICT(service) DO UPDATE SET
+         token=excluded.token, endpoint=excluded.endpoint, status=excluded.status, updated_at=CURRENT_TIMESTAMP",
+        rusqlite::params![service, token, endpoint, status],
+    )?;
+    Ok(())
+}
+
+pub fn get_credential(service: &str) -> Result<Option<(String, String, String)>> {
+    let conn = get_db().lock().unwrap();
+    let mut stmt = conn.prepare("SELECT token, COALESCE(endpoint, ''), COALESCE(status, 'UNCONFIGURED') FROM credentials WHERE service = ?1")?;
+    let mut rows = stmt.query(rusqlite::params![service])?;
+    if let Some(row) = rows.next()? {
+        Ok(Some((row.get(0)?, row.get(1)?, row.get(2)?)))
+    } else {
+        Ok(None)
+    }
 }
 
 
