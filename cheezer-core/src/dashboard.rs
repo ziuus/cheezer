@@ -895,7 +895,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- MODAL: ADD MONITORED TARGET -->
-        <div id="add-watcher-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div id="add-watcher-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
             <div class="glass-card rounded-2xl p-6 max-w-lg w-full border border-slate-800 shadow-2xl space-y-5">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                     <h3 class="text-base font-bold text-white flex items-center gap-2">
@@ -962,7 +962,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
         </div>
 
         <!-- MODAL: INCIDENT DOCUMENTATION & AUDIT INSPECTOR -->
-        <div id="incident-doc-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div id="incident-doc-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
             <div class="glass-card rounded-2xl p-6 max-w-2xl w-full border border-slate-800 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                     <h3 class="text-base font-bold text-white flex items-center gap-2" id="doc-modal-title">
@@ -1377,14 +1377,20 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
         async function openAddWatcherModal() {
             const modal = document.getElementById('add-watcher-modal');
-            if (modal) modal.classList.remove('hidden');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
             await onProviderSelectChange();
             await loadGithubReposDropdown();
         }
 
         function closeAddWatcherModal() {
             const modal = document.getElementById('add-watcher-modal');
-            if (modal) modal.classList.add('hidden');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
 
         async function onProviderSelectChange() {
@@ -1867,6 +1873,7 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
                 `;
 
                 modal.classList.remove('hidden');
+                modal.classList.add('flex');
                 initLucideIcons();
             } catch (e) {
                 alert(`Error opening documentation: ${e}`);
@@ -1875,7 +1882,10 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
 
         function closeIncidentDocModal() {
             const modal = document.getElementById('incident-doc-modal');
-            if (modal) modal.classList.add('hidden');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
 
         function renderIncidents(list) {
