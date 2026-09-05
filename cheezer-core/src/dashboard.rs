@@ -841,7 +841,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                         </thead>
                         <tbody id="incidents-body" class="divide-y divide-slate-800/50 text-sm">
                             <tr>
-                                <td colspan="8" class="text-center py-8 text-slate-500 font-mono">Loading incident stream...</td>
+                                <td colspan="8" class="text-center py-8 text-slate-500 font-mono">No incidents recorded yet</td>
                             </tr>
                         </tbody>
                     </table>
@@ -1977,8 +1977,8 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
             body.innerHTML = html;
         }
 
-        setInterval(fetchIncidents, 2000);
-        setInterval(fetchKillSwitchStatus, 2000);
+        setInterval(fetchIncidents, 1000);
+        setInterval(fetchKillSwitchStatus, 1000);
         window.addEventListener('DOMContentLoaded', () => {
             fetchIncidents();
             fetchKillSwitchStatus();
@@ -1987,6 +1987,14 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
             fetchMetrics();
             initLucideIcons();
         });
+        window.onload = () => {
+            fetchIncidents();
+            fetchKillSwitchStatus();
+            fetchConnections();
+            fetchWatchers();
+            fetchMetrics();
+            initLucideIcons();
+        };
     </script>
 </body>
 </html>
