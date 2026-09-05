@@ -23,6 +23,19 @@ pub struct RemediationRecord {
     pub timestamp: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MonitoredTarget {
+    pub id: i64,
+    pub name: String,
+    pub provider: String,
+    pub external_id: String,
+    pub environment: String,
+    pub github_repo: String,
+    pub custom_instructions: String,
+    pub status: String,
+    pub created_at: String,
+}
+
 fn get_db() -> &'static Mutex<Connection> {
     static DB: OnceLock<Mutex<Connection>> = OnceLock::new();
     DB.get_or_init(|| {
@@ -100,6 +113,21 @@ pub fn init_db() -> Result<()> {
             endpoint TEXT,
             status TEXT DEFAULT 'CONFIGURED',
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS monitored_targets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            external_id TEXT NOT NULL,
+            environment TEXT DEFAULT 'production',
+            github_repo TEXT,
+            custom_instructions TEXT,
+            status TEXT DEFAULT 'WATCHING',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )",
         [],
     )?;
@@ -354,6 +382,56 @@ pub fn get_credential(service: &str) -> Result<Option<(String, String, String)>>
     } else {
         Ok(None)
     }
+}
+
+pub fn create_monitored_target(
+    name: &str,
+    provider: &str,
+    external_id: &str,
+    environment: &str,
+    github_repo: &str,
+    custom_instructions: &str,
+) -> Result<i64> {
+    let conn = get_db().lock().unwrap();
+    conn.execute(
+        "INSERT INTO monitored_targets (name, provider, external_id, environment, github_repo, custom_instructions, status)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'WATCHING')",
+        rusqlite::params![name, provider, external_id, environment, github_repo, custom_instructions],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn get_monitored_targets() -> Result<Vec<MonitoredTarget>> {
+    let conn = get_db().lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT id, name, provider, external_id, COALESCE(environment, 'production'), COALESCE(github_repo, ''), COALESCE(custom_instructions, ''), status, DATETIME(created_at)
+         FROM monitored_targets ORDER BY id DESC"
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(MonitoredTarget {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            provider: row.get(2)?,
+            external_id: row.get(3)?,
+            environment: row.get(4)?,
+            github_repo: row.get(5)?,
+            custom_instructions: row.get(6)?,
+            status: row.get(7)?,
+            created_at: row.get(8).unwrap_or_default(),
+        })
+    })?;
+
+    let mut list = Vec::new();
+    for r in rows {
+        list.push(r?);
+    }
+    Ok(list)
+}
+
+pub fn delete_monitored_target(id: i64) -> Result<()> {
+    let conn = get_db().lock().unwrap();
+    conn.execute("DELETE FROM monitored_targets WHERE id = ?1", rusqlite::params![id])?;
+    Ok(())
 }
 
 
