@@ -31,6 +31,13 @@ pub fn create_router() -> Router {
         .route("/api/incidents/{id}/approve", post(dashboard::approve_incident))
         .route("/api/alerts/simulate", post(dashboard::simulate_alert))
         .route("/api/circuit_breaker/reset", post(dashboard::reset_circuit_breaker))
+        .route("/api/logs", get(dashboard::get_logs_json))
+        .route("/api/metrics", get(dashboard::get_metrics_json))
+        .route("/api/connections", get(dashboard::get_connections_json))
+        .route("/api/connections/test", post(dashboard::test_connection))
+        .route("/api/settings", get(dashboard::get_settings_json))
+        .route("/api/settings", post(dashboard::update_settings_json))
+        .route("/api/history", get(dashboard::get_history_json))
         .route("/api/system/status", get(get_system_status))
         .route("/api/system/toggle", post(toggle_system_status))
 }
