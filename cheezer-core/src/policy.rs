@@ -1,6 +1,17 @@
 use serde::Serialize;
 use serde_json::Value;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
+
+static POLICY_CALL_COUNT: AtomicUsize = AtomicUsize::new(0);
+
+pub fn get_policy_call_count() -> usize {
+    POLICY_CALL_COUNT.load(Ordering::Relaxed)
+}
+
+pub fn reset_policy_call_count() {
+    POLICY_CALL_COUNT.store(0, Ordering::Relaxed);
+}
 
 #[derive(Serialize)]
 struct OpaInput<'a> {
@@ -16,6 +27,8 @@ struct OpaQuery<'a> {
 }
 
 pub async fn check_action(action: &str, resource: &str, target_replicas: i32, command: Vec<&str>) -> bool {
+    POLICY_CALL_COUNT.fetch_add(1, Ordering::Relaxed);
+
     let client = reqwest::Client::new();
     let query = OpaQuery {
         input: OpaInput {

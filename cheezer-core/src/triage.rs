@@ -1,5 +1,5 @@
 use crate::ingest::Alert;
-use crate::{store, fallback, llm, policy, executor};
+use crate::{store, fallback, guard, llm, policy, executor};
 
 pub async fn process_alert(alert: Alert) {
     let signature = alert.labels.get("alertname").map(|s| s.as_str()).unwrap_or("Unknown");
@@ -46,8 +46,27 @@ pub async fn process_alert(alert: Alert) {
 
 async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &str, action: &str, alert: &Alert) {
     let (action_type, resource, target_replicas, cmd) = parse_action(action);
+    let target_resource = if let Some(pod) = alert.labels.get("pod") {
+        pod.as_str()
+    } else if let Some(node) = alert.labels.get("node") {
+        node.as_str()
+    } else {
+        resource
+    };
+
+    // 1. Remediation Guard Check (sits BEFORE OPA policy check)
+    match guard::RemediationGuard::evaluate(alert_id, target_resource, action) {
+        guard::GuardResult::Block(reason) => {
+            log::warn!("Action blocked by Remediation Guard: {}", reason);
+            let _ = store::log_incident(signature, severity, mode, action, "requires_human_intervention");
+            let _ = store::log_action(alert_id, mode, &format!("blocked_by_guard: {}", reason));
+            return;
+        }
+        guard::GuardResult::Allow => {}
+    }
+
+    // 2. OPA Policy Check
     let is_allowed = policy::check_action(action_type, resource, target_replicas, cmd).await;
-    
     if !is_allowed {
         log::warn!("Action blocked by OPA policy: {}", action);
         let _ = store::log_incident(signature, severity, mode, action, "blocked");
@@ -55,9 +74,11 @@ async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &s
         return;
     }
 
+    // 3. Executor
     match executor::apply_action(action, alert).await {
         Ok(_) => {
             log::info!("Successfully executed action: {}", action);
+            let _ = store::log_remediation(alert_id, target_resource, action);
             let _ = store::log_incident(signature, severity, mode, action, "executed");
             let _ = store::log_action(alert_id, mode, action);
         }
@@ -68,6 +89,7 @@ async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &s
         }
     }
 }
+
 
 fn parse_action(action: &str) -> (&str, &str, i32, Vec<&str>) {
     if action.starts_with("restart pod") {
@@ -285,7 +307,59 @@ mod tests {
 
         println!("SUCCESS: OPA blocked dangerous namespace deletion proposed by LLM, recorded status='blocked' in SQLite!");
     }
+
+    #[tokio::test]
+    async fn test_remediation_loop_blocked() {
+        let _guard = TEST_MUTEX.lock().unwrap();
+        unsafe {
+            std::env::set_var("MOCK_EXECUTOR", "true");
+            std::env::set_var("IGNORE_COOLDOWN", "true");
+        }
+        store::init_db().unwrap();
+        store::clear_db().unwrap();
+        llm::reset_llm_call_count();
+        policy::reset_policy_call_count();
+
+        // Simulate 4 rapid pod restarts on the exact same resource
+        for _ in 1..=4 {
+            let mut labels = HashMap::new();
+            labels.insert("alertname".to_string(), "CrashLoopBackOff".to_string());
+            labels.insert("severity".to_string(), "critical".to_string());
+            labels.insert("pod".to_string(), "flapping-pod-x".to_string());
+            labels.insert("namespace".to_string(), "default".to_string());
+
+            let alert = Alert {
+                status: "firing".to_string(),
+                labels,
+                annotations: HashMap::new(),
+            };
+
+            process_alert(alert).await;
+        }
+
+        let incidents = store::get_incidents().unwrap();
+        assert_eq!(incidents.len(), 4, "Expected 4 incident entries");
+
+        // The first 3 actions should be executed
+        assert_eq!(incidents[0].status, "executed");
+        assert_eq!(incidents[1].status, "executed");
+        assert_eq!(incidents[2].status, "executed");
+
+        // The 4th action MUST be blocked by RemediationGuard with status 'requires_human_intervention'
+        assert_eq!(incidents[3].status, "requires_human_intervention");
+        assert_eq!(incidents[3].action, "restart pod");
+
+        // Verify OPA policy call count was ONLY 3; the 4th attempt was blocked by guard BEFORE OPA!
+        assert_eq!(policy::get_policy_call_count(), 3, "OPA must only be called 3 times; 4th attempt must be blocked by RemediationGuard before OPA!");
+
+        unsafe {
+            std::env::remove_var("IGNORE_COOLDOWN");
+        }
+
+        println!("SUCCESS: RemediationGuard blocked 4th rapid pod restart before OPA was reached, marking status='requires_human_intervention'!");
+    }
 }
+
 
 
 

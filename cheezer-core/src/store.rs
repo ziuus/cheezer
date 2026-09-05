@@ -68,6 +68,17 @@ pub fn init_db() -> Result<()> {
         )",
         [],
     )?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS remediation_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            incident_id INTEGER NOT NULL,
+            resource TEXT NOT NULL,
+            action TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
     
     Ok(())
 }
@@ -78,8 +89,53 @@ pub fn clear_db() -> Result<()> {
     conn.execute("DELETE FROM alerts", [])?;
     conn.execute("DELETE FROM action_log", [])?;
     conn.execute("DELETE FROM signature_history", [])?;
+    conn.execute("DELETE FROM remediation_history", [])?;
     Ok(())
 }
+
+pub fn log_remediation(incident_id: i64, resource: &str, action: &str) -> Result<i64> {
+    let conn = get_db().lock().unwrap();
+    conn.execute(
+        "INSERT INTO remediation_history (incident_id, resource, action) VALUES (?1, ?2, ?3)",
+        rusqlite::params![incident_id, resource, action],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn get_resource_action_count(resource: &str, window_seconds: i64) -> Result<i64> {
+    let conn = get_db().lock().unwrap();
+    let query = format!(
+        "SELECT COUNT(*) FROM remediation_history WHERE resource = ?1 AND timestamp >= DATETIME('now', '-{} seconds')",
+        window_seconds
+    );
+    let count: i64 = conn.query_row(&query, rusqlite::params![resource], |r| r.get(0))?;
+    Ok(count)
+}
+
+pub fn get_incident_action_count(incident_id: i64) -> Result<i64> {
+    let conn = get_db().lock().unwrap();
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM remediation_history WHERE incident_id = ?1",
+        rusqlite::params![incident_id],
+        |r| r.get(0)
+    )?;
+    Ok(count)
+}
+
+pub fn get_seconds_since_last_resource_action(resource: &str) -> Result<Option<i64>> {
+    let conn = get_db().lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT CAST((JULIANDAY('now') - JULIANDAY(timestamp)) * 86400 AS INTEGER) FROM remediation_history WHERE resource = ?1 ORDER BY id DESC LIMIT 1"
+    )?;
+    let mut rows = stmt.query(rusqlite::params![resource])?;
+    if let Some(row) = rows.next()? {
+        let secs: i64 = row.get(0)?;
+        Ok(Some(secs))
+    } else {
+        Ok(None)
+    }
+}
+
 
 pub fn log_incident(signature: &str, severity: &str, mode: &str, action: &str, status: &str) -> Result<i64> {
     let conn = get_db().lock().unwrap();

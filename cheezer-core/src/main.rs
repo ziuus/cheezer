@@ -1,5 +1,6 @@
 mod executor;
 mod fallback;
+mod guard;
 mod ingest;
 mod llm;
 mod policy;
