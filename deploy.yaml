@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cheezer-sa
+  namespace: demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cheezer-operator-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "namespaces", "nodes"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["rolebindings", "clusterrolebindings"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cheezer-operator-binding
+subjects:
+- kind: ServiceAccount
+  name: cheezer-sa
+  namespace: demo
+roleRef:
+  kind: ClusterRole
+  name: cheezer-operator-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cheezer-core
+  namespace: demo
+  labels:
+    app: cheezer-core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cheezer-core
+  template:
+    metadata:
+      labels:
+        app: cheezer-core
+    spec:
+      serviceAccountName: cheezer-sa
+      tolerations:
+      - operator: "Exists"
+      containers:
+      - name: cheezer-core
+        image: localhost:5000/cheezer-core:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9090
+          name: http
+        - containerPort: 9000
+          name: watchdog
+        env:
+        - name: LLM_API_URL
+          value: "https://integrate.api.nvidia.com/v1/chat/completions"
+        - name: LLM_API_KEY
+          value: "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"
+        - name: LLM_MODEL
+          value: "meta/llama-3.2-11b-vision-instruct"
+        - name: OPA_URL
+          value: "http://localhost:8181/v1/data/cheezer/authz/allow"
+        - name: NOTIFICATION_WEBHOOK_URL
+          value: "https://httpbin.org/post"
+        - name: API_KEY
+          value: "hackathon2026"
+        - name: CHEEZER_API_KEY
+          value: "hackathon2026"
+        - name: WEBHOOK_SECRET
+          value: "hackathon2026"
+        - name: RUST_LOG
+          value: "info"
+        - name: MOCK_OPA_ENABLED
+          value: "true"
