@@ -830,7 +830,7 @@ pub async fn approve_incident(
     }
 }
 
-const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
+const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -882,31 +882,31 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
 
     <div class="relative z-10 w-full">
         <!-- Header -->
-        <header class="flex flex-col md:flex-row md:items-center md:justify-between bg-[#F3F6FC] px-6 py-4 p-4 gap-4 bg-white border-b border-[#DADCE0] w-full flex items-center justify-between shadow-sm">
+        <header class="flex items-center justify-between bg-[#FFFFFF] px-6 py-3 border-b border-[#DADCE0]">
             <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 rounded-lg bg-gradient-to-tr from-amber-500 via-orange-500 to-yellow-400 flex items-center justify-center shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]  text-[#1F1F1F]">
-                    <span class="material-symbols-outlined   stroke-[2.5]">security</span>
+                <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                    <!-- Clean Google-style Logo Icon -->
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L3 6V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V6L12 2Z" fill="#1A73E8"/>
+                        <path d="M12 11.9999L3 6V11C3 16.55 6.84 21.74 12 23V11.9999Z" fill="#174EA6"/>
+                        <path d="M21 6L12 2V11.9999L21 6Z" fill="#4285F4"/>
+                    </svg>
                 </div>
-                <div>
-                    <h1 class="text-2xl font-extrabold tracking-tight text-[#1F1F1F] flex items-center gap-3">
-                        Cheezer Core <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/20 font-mono font-semibold tracking-wide">v0.1.0 • Control Plane</span>
-                    </h1>
-                    <p class="text-xs text-[#444746] mt-0.5">Autonomous Kubernetes Self-Healing Engine & Reliability Control Plane</p>
-                </div>
+                <h1 class="text-[22px] font-normal text-[#1F1F1F] tracking-tight" style="font-family: 'Outfit', 'Google Sans', sans-serif;">
+                    Cheezer Core
+                </h1>
             </div>
-            <div class="flex items-center space-x-3">
-                <button id="kill-switch-btn" onclick="toggleKillSwitch()" class="flex items-center space-x-2 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition cursor-pointer shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-emerald-500/10">
-                    <span id="kill-switch-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="material-symbols-outlined  ">power</span>
-                    <span id="kill-switch-text">ENGINE ACTIVE</span>
+            
+            <!-- Clean utility section (e.g. Account, Settings icons) -->
+            <div class="flex items-center space-x-3 text-[#5F6368]">
+                <button class="w-10 h-10 rounded-full hover:bg-[#F8F9FA] flex items-center justify-center transition">
+                    <span class="material-symbols-outlined">help</span>
                 </button>
-                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-lg text-xs font-mono text-[#444746] ">
-                    <span class="material-symbols-outlined   text-[#1E8E3E] animate-pulse">monitoring</span>
-                    <span>WATCHDOG ACTIVE</span>
-                </div>
-                <div class="flex items-center space-x-2 bg-white/80 border border-[#DADCE0]/80 px-3 py-2 rounded-lg text-xs font-mono text-[#444746] ">
-                    <span class="material-symbols-outlined   text-[#0B57D0]">lock</span>
-                    <span>OPA FAIL-CLOSED</span>
+                <button class="w-10 h-10 rounded-full hover:bg-[#F8F9FA] flex items-center justify-center transition">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-[#1A73E8] text-white flex items-center justify-center text-sm font-medium ml-2 cursor-pointer">
+                    A
                 </div>
             </div>
         </header>
@@ -2297,7 +2297,7 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
     </script>
 </body>
 </html>
-"#;
+"##;
 
 #[cfg(test)]
 mod tests {
