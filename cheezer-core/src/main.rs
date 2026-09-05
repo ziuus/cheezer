@@ -2,6 +2,7 @@ mod action;
 mod dashboard;
 mod executor;
 mod fallback;
+mod gitops;
 mod guard;
 mod ingest;
 mod llm;
@@ -9,6 +10,7 @@ mod policy;
 mod store;
 mod triage;
 mod watchdog;
+
 
 use std::env;
 use std::net::SocketAddr;

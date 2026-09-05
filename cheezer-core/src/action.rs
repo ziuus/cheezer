@@ -31,6 +31,12 @@ pub enum Action {
     LogCheckCapacity {
         reason: String,
     },
+    CreateGithubPR {
+        file_path: String,
+        new_content: String,
+        pr_title: String,
+        pr_body: String,
+    },
     None,
 }
 
@@ -43,6 +49,7 @@ impl Action {
             Action::DeleteNamespace { .. } => "delete",
             Action::ExecCommand { .. } => "exec",
             Action::ModifyRbac { .. } => "modify",
+            Action::CreateGithubPR { .. } => "gitops",
             Action::LogReviewNeeded { .. } | Action::LogCheckCapacity { .. } | Action::None => "log",
         }
     }
@@ -54,6 +61,7 @@ impl Action {
             Action::CordonNode { .. } => "node",
             Action::DeleteNamespace { .. } => "namespace",
             Action::ModifyRbac { .. } => "rbac",
+            Action::CreateGithubPR { .. } => "git",
             Action::LogReviewNeeded { .. } | Action::LogCheckCapacity { .. } | Action::None => "none",
         }
     }
@@ -66,6 +74,7 @@ impl Action {
             Action::DeleteNamespace { namespace, .. } => namespace.clone(),
             Action::ExecCommand { pod, .. } => pod.clone(),
             Action::ModifyRbac { resource, .. } => resource.clone(),
+            Action::CreateGithubPR { file_path, .. } => file_path.clone(),
             Action::LogReviewNeeded { .. } | Action::LogCheckCapacity { .. } | Action::None => "".to_string(),
         }
     }
@@ -94,6 +103,7 @@ impl Action {
             Action::ModifyRbac { resource } => format!("modify rbac {}", resource),
             Action::LogReviewNeeded { reason } => format!("log manual review needed: {}", reason),
             Action::LogCheckCapacity { reason } => format!("log check node capacity: {}", reason),
+            Action::CreateGithubPR { file_path, pr_title, .. } => format!("create github pr for {} - {}", file_path, pr_title),
             Action::None => "none".to_string(),
         }
     }

@@ -87,3 +87,8 @@ spec:
           value: "info"
         - name: MOCK_OPA_ENABLED
           value: "true"
+        - name: GITHUB_TOKEN
+          value: ""
+        - name: GITHUB_REPO
+          value: "ziuus/cheezer"
+

@@ -24,6 +24,14 @@ pub struct LlmTarget {
     pub resource: Option<String>,
     #[serde(default)]
     pub replicas: Option<u32>,
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub new_content: Option<String>,
+    #[serde(default)]
+    pub pr_title: Option<String>,
+    #[serde(default)]
+    pub pr_body: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -33,6 +41,14 @@ pub struct LlmResponse {
     pub proposed_action: String,
     pub target: LlmTarget,
     pub reason: String,
+    #[serde(default)]
+    pub file_path: Option<String>,
+    #[serde(default)]
+    pub new_content: Option<String>,
+    #[serde(default)]
+    pub pr_title: Option<String>,
+    #[serde(default)]
+    pub pr_body: Option<String>,
 }
 
 impl LlmResponse {
@@ -83,6 +99,27 @@ impl LlmResponse {
             "LogReviewNeeded" => {
                 Ok(Action::LogReviewNeeded {
                     reason: self.reason.clone(),
+                })
+            }
+            "CreateGithubPR" | "create github pr" => {
+                let file_path = self.file_path.clone()
+                    .or_else(|| self.target.file_path.clone())
+                    .unwrap_or_default();
+                let new_content = self.new_content.clone()
+                    .or_else(|| self.target.new_content.clone())
+                    .unwrap_or_default();
+                let pr_title = self.pr_title.clone()
+                    .or_else(|| self.target.pr_title.clone())
+                    .unwrap_or_else(|| format!("Remediation PR for {}", file_path));
+                let pr_body = self.pr_body.clone()
+                    .or_else(|| self.target.pr_body.clone())
+                    .unwrap_or_else(|| self.reason.clone());
+
+                Ok(Action::CreateGithubPR {
+                    file_path,
+                    new_content,
+                    pr_title,
+                    pr_body,
                 })
             }
             "None" => Ok(Action::None),
@@ -223,7 +260,8 @@ async fn call_llm(alert: &Alert, force_timeout: bool) -> Result<String, Box<dyn 
     let model = std::env::var("LLM_MODEL").unwrap_or_else(|_| "gpt-4o-mini".to_string());
 
     let alert_json = serde_json::to_string(alert)?;
-    let system_prompt = "You are Cheezer, an autonomous Kubernetes incident remediation assistant. Analyze the given Alert and output ONLY valid JSON matching this schema: {\"incident_class\": string, \"confidence\": number, \"proposed_action\": string, \"target\": {\"namespace\": string, \"resource\": string, \"replicas\": optional number}, \"reason\": string}. Crucially, proposed_action MUST be strictly one of: \"RestartPod\", \"ScaleDeployment\", \"CordonNode\", \"DeleteNamespace\", \"LogReviewNeeded\", or \"None\". Do not propose raw shell/kubectl commands or arbitrary strings.";
+    let system_prompt = "You are Cheezer, an autonomous Kubernetes incident remediation assistant. Analyze the given Alert and output ONLY valid JSON matching this schema: {\"incident_class\": string, \"confidence\": number, \"proposed_action\": string, \"target\": {\"namespace\": string, \"resource\": string, \"replicas\": optional number}, \"reason\": string}. Crucially, proposed_action MUST be strictly one of: \"RestartPod\", \"ScaleDeployment\", \"CordonNode\", \"DeleteNamespace\", \"LogReviewNeeded\", \"CreateGithubPR\", or \"None\". Use CreateGithubPR when root-cause mitigation requires permanent manifest or source code modifications. Schema for CreateGithubPR: {\"action\": \"CreateGithubPR\", \"file_path\": \"<path>\", \"new_content\": \"<full updated content>\", \"pr_title\": \"<title>\", \"pr_body\": \"<detailed explanation>\"}. Do not propose raw shell/kubectl commands or arbitrary strings.";
+
 
     let payload = serde_json::json!({
         "model": model,

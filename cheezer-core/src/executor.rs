@@ -307,6 +307,24 @@ pub async fn apply_action(action: &Action, alert: &Alert) -> Result<(), Executio
                 }
             }
         }
+        Action::CreateGithubPR { file_path, new_content, pr_title, pr_body } => {
+            let file_path = file_path.clone();
+            let new_content = new_content.clone();
+            let pr_title = pr_title.clone();
+            let pr_body = pr_body.clone();
+
+            log::info!("Spawning asynchronous GitOps PR creation task for file '{}' - Title: '{}'", file_path, pr_title);
+            tokio::spawn(async move {
+                match crate::gitops::create_remediation_pr(&file_path, &new_content, &pr_title, &pr_body).await {
+                    Ok(url) => {
+                        log::info!("Asynchronous GitOps PR creation succeeded: {}", url);
+                    }
+                    Err(e) => {
+                        log::error!("Asynchronous GitOps PR creation failed for '{}': {}", file_path, e);
+                    }
+                }
+            });
+        }
         Action::None => {
             log::info!("[EXECUTOR NO-ACTION INTENT] Operational state verified; no remediation required");
         }
