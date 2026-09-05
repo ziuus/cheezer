@@ -914,7 +914,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         <!-- Navigation Tab Bar -->
         <nav class="flex flex-wrap items-center space-x-2 my-6 border-b border-[#DADCE0]/80 pb-3 gap-y-2">
             <a id="tab-btn-incidents" href="/incidents" onclick="switchTab('incidents'); return false;" class="__TAB_BTN_CLASS_INCIDENTS__">
-                <span class="material-symbols-outlined  ">shield-alert</span>
+                <span class="material-symbols-outlined  ">gpp_maybe</span>
                 <span>Live Incidents & Circuit Breakers</span>
             </a>
             <a id="tab-btn-connections" href="/connections" onclick="switchTab('connections'); return false;" class="__TAB_BTN_CLASS_CONNECTIONS__">
@@ -922,7 +922,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <span>Connections</span>
             </a>
             <a id="tab-btn-metrics" href="/monitor" onclick="switchTab('metrics'); return false;" class="__TAB_BTN_CLASS_METRICS__">
-                <span class="material-symbols-outlined  ">bar-chart-2</span>
+                <span class="material-symbols-outlined  ">bar_chart</span>
                 <span>Monitor</span>
             </a>
             <a id="tab-btn-logs" href="/logs" onclick="switchTab('logs'); return false;" class="__TAB_BTN_CLASS_LOGS__">
@@ -953,7 +953,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <div class=" rounded-lg p-5 ">
                     <div class="flex items-center justify-between text-xs font-medium text-[#444746] uppercase tracking-wider">
                         <span>Self-Remediated</span>
-                        <span class="material-symbols-outlined   text-[#1E8E3E]">check-circle-2</span>
+                        <span class="material-symbols-outlined   text-[#1E8E3E]">check_circle</span>
                     </div>
                     <div class="text-3xl font-extrabold text-[#1E8E3E] mt-2 font-mono" id="kpi-executed">0</div>
                 </div>
@@ -967,7 +967,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <div class=" rounded-lg p-5 ">
                     <div class="flex items-center justify-between text-xs font-medium text-[#444746] uppercase tracking-wider">
                         <span>OPA Denials / Blocked</span>
-                        <span class="material-symbols-outlined   text-[#D93025]">shield-ban</span>
+                        <span class="material-symbols-outlined   text-[#D93025]">gpp_bad</span>
                     </div>
                     <div class="text-3xl font-extrabold text-[#D93025] mt-2 font-mono" id="kpi-blocked">0</div>
                 </div>
@@ -977,13 +977,13 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
                         <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
-                            <span class="material-symbols-outlined   text-[#0B57D0]">rss</span>
+                            <span class="material-symbols-outlined   text-[#0B57D0]">rss_feed</span>
                             Live Incident Stream & Circuit Breakers
                         </h2>
                         <p class="text-xs text-[#444746] mt-0.5">Real-time audit log of rule evaluations, LLM escalations, and human intervention locks</p>
                     </div>
                     <button onclick="fetchIncidents()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <span class="material-symbols-outlined  ">rotate-cw</span>
+                        <span class="material-symbols-outlined  ">refresh</span>
                         <span>Refresh Stream</span>
                     </button>
                 </div>
@@ -1025,7 +1025,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                         <p class="text-xs text-[#444746] mt-0.5">Manage credentials for Kubernetes, Vercel, GitHub, Render, AWS, and GCloud</p>
                     </div>
                     <button onclick="fetchConnections()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <span class="material-symbols-outlined  ">rotate-cw</span>
+                        <span class="material-symbols-outlined  ">refresh</span>
                         <span>Refresh Connections</span>
                     </button>
                 </div>
@@ -1040,13 +1040,13 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-[#DADCE0]/80">
                     <div>
                         <h2 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
-                            <span class="material-symbols-outlined   text-[#9333EA]">eye</span>
+                            <span class="material-symbols-outlined   text-[#9333EA]">visibility</span>
                             Monitored Workloads & Watcher Engine
                         </h2>
                         <p class="text-xs text-[#444746] mt-0.5">Active software, websites, and backend services watched across Vercel, K8s, AWS & GCloud</p>
                     </div>
                     <button onclick="openAddWatcherModal()" class="text-xs font-mono font-bold bg-[#0B57D0] hover:bg-[#174EA6] text-[#1F1F1F] px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] ">
-                        <span class="material-symbols-outlined  ">plus-circle</span>
+                        <span class="material-symbols-outlined  ">add_circle</span>
                         <span>+ Add Monitored Target</span>
                     </button>
                 </div>
@@ -1062,11 +1062,11 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             <div class=" rounded-lg p-6 max-w-lg w-full border border-[#DADCE0] shadow-2xl space-y-5">
                 <div class="flex items-center justify-between pb-3 border-b border-[#DADCE0]">
                     <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2">
-                        <span class="material-symbols-outlined   text-[#0B57D0]">shield-plus</span>
+                        <span class="material-symbols-outlined   text-[#0B57D0]">health_and_safety</span>
                         Add Monitored Workload Target
                     </h3>
                     <button onclick="closeAddWatcherModal()" class="text-[#444746] hover:text-[#1F1F1F]">
-                        <span class="material-symbols-outlined  ">x</span>
+                        <span class="material-symbols-outlined  ">close</span>
                     </button>
                 </div>
 
@@ -1134,11 +1134,11 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             <div class=" rounded-lg p-6 max-w-2xl w-full border border-[#DADCE0] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between pb-3 border-b border-[#DADCE0]">
                     <h3 class="text-base font-bold text-[#1F1F1F] flex items-center gap-2" id="doc-modal-title">
-                        <span class="material-symbols-outlined   text-[#0B57D0]">file-text</span>
+                        <span class="material-symbols-outlined   text-[#0B57D0]">description</span>
                         Incident Documentation & Telemetry Archive
                     </h3>
                     <button onclick="closeIncidentDocModal()" class="text-[#444746] hover:text-[#1F1F1F]">
-                        <span class="material-symbols-outlined  ">x</span>
+                        <span class="material-symbols-outlined  ">close</span>
                     </button>
                 </div>
 
@@ -1160,7 +1160,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <div class=" rounded-lg p-6 ">
                     <div class="flex items-center justify-between text-xs font-semibold text-[#444746] uppercase tracking-wider">
                         <span>Self-Healing Success Rate</span>
-                        <span class="material-symbols-outlined   text-[#1E8E3E]">check-check</span>
+                        <span class="material-symbols-outlined   text-[#1E8E3E]">done_all</span>
                     </div>
                     <div class="text-4xl font-extrabold text-[#1E8E3E] mt-3 font-mono" id="metric-success-rate">0%</div>
                     <div class="w-full bg-white h-2 rounded-full mt-4 overflow-hidden">
@@ -1172,7 +1172,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 <div class=" rounded-lg p-6 ">
                     <div class="flex items-center justify-between text-xs font-semibold text-[#444746] uppercase tracking-wider">
                         <span>Triage Path Breakdown</span>
-                        <span class="material-symbols-outlined   text-[#9333EA]">git-fork</span>
+                        <span class="material-symbols-outlined   text-[#9333EA]">fork_right</span>
                     </div>
                     <div class="flex items-center justify-between mt-4">
                         <div>
@@ -1208,7 +1208,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                         <p class="text-xs text-[#444746] mt-0.5">Live CPU, Memory, Throughput, and Error Rate metrics across watched systems</p>
                     </div>
                     <button onclick="fetchMetrics()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <span class="material-symbols-outlined  ">rotate-cw</span>
+                        <span class="material-symbols-outlined  ">refresh</span>
                         <span>Refresh Telemetry</span>
                     </button>
                 </div>
@@ -1280,7 +1280,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                             <input type="text" id="log-search" onkeyup="filterLogs()" placeholder="Search logs (e.g. OPA, CrashLoop)..." class="bg-[#F3F6FC] border border-[#DADCE0] text-xs text-[#1F1F1F] pl-8 pr-3 py-1.5 rounded-lg focus:outline-none focus:border-[#1A73E8] w-64 font-mono">
                         </div>
                         <button onclick="fetchLogs()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                            <span class="material-symbols-outlined  ">rotate-cw</span>
+                            <span class="material-symbols-outlined  ">refresh</span>
                             <span>Refresh Logs</span>
                         </button>
                     </div>
@@ -1304,7 +1304,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                         <p class="text-xs text-[#444746] mt-0.5">Filterable historical database of all evaluated alerts, actions, and verification records</p>
                     </div>
                     <button onclick="fetchHistory()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <span class="material-symbols-outlined  ">rotate-cw</span>
+                        <span class="material-symbols-outlined  ">refresh</span>
                         <span>Reload History</span>
                     </button>
                 </div>
@@ -1351,7 +1351,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
 
                     <div>
                         <label class="block text-xs font-mono text-[#0B57D0] font-bold uppercase mb-1 flex items-center gap-1.5">
-                            <span class="material-symbols-outlined  ">github</span> GitHub Personal Access Token (PAT)
+                            <span class="material-symbols-outlined  ">code</span> GitHub Personal Access Token (PAT)
                         </label>
                         <input type="password" id="setting-github-token" placeholder="Paste GitHub PAT (repo, workflow scope)..." class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                     </div>
@@ -1359,7 +1359,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-mono text-[#0B57D0] font-bold uppercase mb-1 flex items-center gap-1.5">
-                                <span class="material-symbols-outlined  ">globe</span> Vercel Platform Token
+                                <span class="material-symbols-outlined  ">public</span> Vercel Platform Token
                             </label>
                             <input type="password" id="setting-vercel-token" placeholder="Paste Vercel API Token..." class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
                         </div>
@@ -1590,13 +1590,13 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                                 <span class="text-xs text-[#444746] font-mono block mt-1">Resource ID: ${w.external_id} • Env: ${w.environment}</span>
                             </div>
                             <button onclick="deleteWatcher(${w.id})" class="text-[#444746] hover:text-[#D93025] p-1.5 rounded-lg hover:bg-[#D93025]/10 transition">
-                                <span class="material-symbols-outlined  ">trash-2</span>
+                                <span class="material-symbols-outlined  ">delete</span>
                             </button>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-2 border-t border-[#DADCE0]/60 font-mono">
                             <div class="flex items-center space-x-1.5 text-[#444746]">
-                                <span class="material-symbols-outlined   text-[#0B57D0]">github</span>
+                                <span class="material-symbols-outlined   text-[#0B57D0]">code</span>
                                 <span class="text-[#444746]">GitOps Repo:</span>
                                 <span class="text-[#0B57D0] font-bold">${w.github_repo || 'ziuus/cheezer'}</span>
                             </div>
@@ -2003,10 +2003,10 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             let html = '';
             for (const w of workloads) {
                 let badgeColor = 'bg-sky-500/10 text-[#0B57D0] border-sky-500/30';
-                let iconName = 'server';
-                if (w.provider === 'vercel') { badgeColor = 'bg-purple-500/10 text-[#9333EA] border-purple-500/30'; iconName = 'globe'; }
+                let iconName = 'dns';
+                if (w.provider === 'vercel') { badgeColor = 'bg-purple-500/10 text-[#9333EA] border-purple-500/30'; iconName = 'public'; }
                 else if (w.provider === 'aws') { badgeColor = 'bg-transparent text-[#0B57D0] border-[#DADCE0]'; iconName = 'cloud'; }
-                else if (w.provider === 'gcloud') { badgeColor = 'bg-blue-500/10 text-[#0B57D0] border-blue-500/30'; iconName = 'cpu'; }
+                else if (w.provider === 'gcloud') { badgeColor = 'bg-blue-500/10 text-[#0B57D0] border-blue-500/30'; iconName = 'memory'; }
                 else if (w.provider === 'render') { badgeColor = 'bg-[#1E8E3E]/10 text-[#1E8E3E] border-[#1E8E3E]/30'; iconName = 'layers'; }
 
                 html += `
@@ -2094,7 +2094,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 const titleEl = document.getElementById('doc-modal-title');
                 if (titleEl) {
                     titleEl.innerHTML = `
-                        <span class="material-symbols-outlined   text-[#0B57D0]">file-text</span>
+                        <span class="material-symbols-outlined   text-[#0B57D0]">description</span>
                         Incident Audit Archive #${inc.id}
                     `;
                 }
@@ -2202,9 +2202,9 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
                 if (inc.status === 'requires_human_intervention') {
                     statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-transparent text-[#0B57D0] border border-[#DADCE0]"><span class="material-symbols-outlined  ">warning</span> Circuit Breaker Locked</span>`;
                 } else if (inc.status === 'executed' || inc.status === 'human_approved_and_executed') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/30"><span class="material-symbols-outlined  ">check-circle-2</span> ${inc.status}</span>`;
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/30"><span class="material-symbols-outlined  ">check_circle</span> ${inc.status}</span>`;
                 } else if (inc.status === 'blocked' || inc.status === 'blocked_by_opa') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#D93025]/10 text-[#D93025] border border-[#D93025]/30"><span class="material-symbols-outlined  ">shield-ban</span> ${inc.status}</span>`;
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#D93025]/10 text-[#D93025] border border-[#D93025]/30"><span class="material-symbols-outlined  ">gpp_bad</span> ${inc.status}</span>`;
                 } else {
                     statusBadge = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#F1F3F4] text-[#444746] font-mono">${inc.status}</span>`;
                 }
@@ -2230,7 +2230,7 @@ S3 Archive: Synchronized to Floci AWS endpoint (http://172.18.100.41:4566/cheeze
                         <td class="py-3 px-4">${statusBadge}</td>
                         <td class="py-3 px-4 text-right flex items-center justify-end space-x-2">
                             <button onclick="viewIncidentDoc(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#0B57D0] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono">
-                                <span class="material-symbols-outlined   text-[#0B57D0]">file-text</span> Doc
+                                <span class="material-symbols-outlined   text-[#0B57D0]">description</span> Doc
                             </button>
                             <button onclick="dispatchDevin(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#9333EA] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono font-bold shadow shadow-sm">
                                 <span class="material-symbols-outlined   text-[#9333EA]">smart_toy</span> Devin AI Fix
