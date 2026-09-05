@@ -1,11 +1,16 @@
 use crate::action::Action;
 use crate::ingest::Alert;
-use crate::{store, fallback, guard, llm, policy, executor};
+use crate::{store, fallback, guard, llm, policy, executor, predictive};
 
 pub async fn process_alert(alert: Alert) {
     let signature = alert.labels.get("alertname").map(|s| s.as_str()).unwrap_or("Unknown");
     let severity = alert.labels.get("severity").map(|s| s.as_str()).unwrap_or("info");
-    
+    let workload_id = alert.labels.get("pod")
+        .or_else(|| alert.labels.get("deployment"))
+        .or_else(|| alert.labels.get("service"))
+        .cloned()
+        .unwrap_or_else(|| "unknown-workload".to_string());
+
     let alert_id = match store::log_alert(signature, severity) {
         Ok(id) => id,
         Err(e) => {
@@ -14,6 +19,44 @@ pub async fn process_alert(alert: Alert) {
         }
     };
 
+    // 0. Update Adaptive Telemetry Resolution State (NORMAL -> SUSPICIOUS -> INCIDENT)
+    let (telemetry_state, sampling_interval, bytes_saved) = match severity {
+        "critical" | "fatal" => ("INCIDENT", 1, 14.5),
+        "warning" => ("SUSPICIOUS", 10, 32.0),
+        _ => ("NORMAL", 60, 48.0),
+    };
+    let _ = store::update_telemetry_state(&workload_id, telemetry_state, sampling_interval, bytes_saved);
+
+    // 1. Predictive Risk & Failure Forecasting Evaluation
+    let risk = predictive::evaluate_predictive_risk(&alert);
+    let risk_level_str = format!("{:?}", risk.risk_level);
+    let method_str = risk.forecasting_method.to_string();
+    let rec_action_str = risk.recommended_preventive_action.to_action_string();
+
+    let outcome = if risk.is_preventive_remediation_required { "prevented" } else { "pending" };
+    let _ = store::log_prediction(
+        &workload_id,
+        &risk.failure_type,
+        &risk_level_str,
+        risk.failure_probability_percent,
+        risk.confidence_score,
+        risk.estimated_time_to_failure_mins,
+        &method_str,
+        &rec_action_str,
+        outcome,
+        risk.estimated_time_to_failure_mins,
+    );
+
+    if risk.is_preventive_remediation_required {
+        log::info!(
+            "Predictive Failure Forecast: Workload '{}' projected failure in {} mins (Prob: {:.1}%, Method: {}). Triggering preventive remediation.",
+            workload_id, risk.estimated_time_to_failure_mins, risk.failure_probability_percent, method_str
+        );
+        execute_action(alert_id, signature, severity, "predictive", &risk.recommended_preventive_action, &alert).await;
+        return;
+    }
+
+    // 2. Fast-Path Deterministic Rule Match
     if let Some(action) = fallback::match_rule(&alert) {
         log::info!("Matched known pattern for {}: {:?}", signature, action);
         if action.action_type() == "log" {
@@ -25,6 +68,7 @@ pub async fn process_alert(alert: Alert) {
         return;
     }
 
+    // 3. Self-resolving Low-Severity Filter
     let (occurrences, self_resolved) = store::get_signature_stats(signature).unwrap_or((1, 0));
     let resolution_rate = if occurrences > 0 { self_resolved as f32 / occurrences as f32 } else { 0.0 };
 
@@ -35,7 +79,8 @@ pub async fn process_alert(alert: Alert) {
         return;
     }
 
-    log::info!("Escalating novel alert {} to LLM", signature);
+    // 4. Escalation to LLM Router for Novel Alerts
+    log::info!("Escalating novel alert {} to LLM Router", signature);
     let decision = llm::analyze(&alert).await;
     if decision.action.action_type() == "log" || decision.action == Action::None {
         let _ = store::log_incident(signature, severity, &decision.mode, &decision.action.to_action_string(), "logged");

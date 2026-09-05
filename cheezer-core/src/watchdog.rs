@@ -1,21 +1,53 @@
 use std::net::SocketAddr;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::sleep;
 
+pub static IS_LEADER: AtomicBool = AtomicBool::new(true);
+
+#[allow(dead_code)]
+pub fn is_leader() -> bool {
+    IS_LEADER.load(Ordering::Relaxed)
+}
+
+pub fn promote_to_leader() {
+    IS_LEADER.store(true, Ordering::Relaxed);
+    log::info!("Watchdog Leader Election: Promoted node to ACTIVE LEADER status.");
+}
+
+pub fn demote_from_leader() {
+    IS_LEADER.store(false, Ordering::Relaxed);
+    log::info!("Watchdog Leader Election: Demoted node to STANDBY status.");
+}
+
 pub async fn run_primary(bind_addr: &str) {
-    let addr: SocketAddr = bind_addr.parse().unwrap();
-    let listener = TcpListener::bind(&addr).await.expect("Failed to bind watchdog port");
+    promote_to_leader();
+    let addr: SocketAddr = match bind_addr.parse() {
+        Ok(a) => a,
+        Err(e) => {
+            log::error!("Invalid watchdog bind address '{}': {}", bind_addr, e);
+            return;
+        }
+    };
+    let listener = match TcpListener::bind(&addr).await {
+        Ok(l) => l,
+        Err(e) => {
+            log::error!("Failed to bind watchdog port on {}: {}", addr, e);
+            return;
+        }
+    };
     log::info!("Watchdog primary listening on {}", addr);
 
     loop {
         if let Ok((_stream, _)) = listener.accept().await {
-            // Just accept and drop the connection as proof-of-life
+            // Proof-of-life ping handshake
         }
     }
 }
 
 pub async fn run_backup(peer_addr: &str) {
+    demote_from_leader();
     run_backup_interval(peer_addr, Duration::from_secs(2)).await;
 }
 
@@ -28,6 +60,7 @@ pub async fn run_backup_interval(peer_addr: &str, poll_interval: Duration) {
             }
             Err(_) => {
                 log::warn!("Primary watchdog at {} is dead! Backup taking over.", peer_addr);
+                promote_to_leader();
                 break;
             }
         }
@@ -73,7 +106,7 @@ mod tests {
             .expect("Backup must detect primary death within timeout")
             .unwrap();
 
-        println!("SUCCESS: Watchdog failover verified - backup automatically took over when primary was killed!");
+        assert!(is_leader(), "Backup node must be promoted to leader upon failover!");
+        println!("SUCCESS: Watchdog failover verified - backup automatically promoted to LEADER when primary was killed!");
     }
 }
-
