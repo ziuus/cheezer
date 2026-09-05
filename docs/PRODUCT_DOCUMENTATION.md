@@ -123,6 +123,11 @@ Cheezer Core resolves these challenges by introducing a **Hybrid Deterministic +
 ### 👁️ 12. Monitored Workload Watcher Configuration & Dynamic AI Instructions
 * Allows SREs to add custom monitored targets and define specific natural-language AI instructions (e.g. *"If 5xx error rate > 5%, restart deployment and notify Slack"*).
 
+### ⚡ 13. Control Plane Self-Resilience & Dual-Node HA Watchdog (`src/watchdog.rs`)
+* Decouples Cheezer's failure domain from customer application infrastructure.
+* Runs a **Primary + Standby HA Pair** monitored via a TCP proof-of-life Watchdog daemon. If the Primary Cheezer server crashes or suffers network loss, the Standby node automatically promotes to Primary within 3 missed heartbeats.
+* **Core SRE Design Principle:** *"Cheezer recovers customer infrastructure; an independent Watchdog quorum recovers Cheezer."*
+
 ---
 
 ## 5. Supported Deployment Platforms (19 Native Integrations)

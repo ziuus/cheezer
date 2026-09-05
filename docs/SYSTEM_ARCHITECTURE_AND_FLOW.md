@@ -19,8 +19,12 @@ It acts as an automated 24/7 Reliability Engineer that:
    - **TOCTOU (Time-of-Check to Time-of-Use)** re-validation to prevent stale state execution.
    - **Cascading Loop Breakers** to block endless remediation feedback loops.
 4. **Executes remediations natively across 19 deployment platforms** (Kubernetes, AWS Lambda/App Runner, Cloud Run, Azure, Fly.io, Railway, Heroku, Netlify, Docker, Podman, Swarm, Nomad, GitHub, Devin AI, etc.).
-5. **Generates GitOps Pull Requests** for permanent code-level bug fixes.
-6. **Provides an interactive Google Material 3 operational dashboard** with OAuth 2.0 / SSO integration gateways.
+5. **Maintains Control Plane Self-Resilience (Cheezer HA Pair & Watchdog)**:
+   - Operating out-of-band on dedicated control plane nodes separate from customer workloads.
+   - Running a **Primary + Standby HA Pair** monitored via a TCP proof-of-life Watchdog daemon (`src/watchdog.rs`). If the primary Cheezer server crashes, the standby instance automatically promotes to primary within 3 missed heartbeats.
+   - Core Design Principle: *"Cheezer recovers customer infrastructure; an independent Watchdog quorum recovers Cheezer."*
+6. **Generates GitOps Pull Requests** for permanent code-level bug fixes.
+7. **Provides an interactive Google Material 3 operational dashboard** with OAuth 2.0 / SSO integration gateways.
 
 ---
 
@@ -165,9 +169,31 @@ Here is the exact responsibility, contract, and workflow for each source file in
 * Features clean Material 3 light mode (`#F3F6FC` background, white elevation cards, Google Blue `#1A73E8` accents).
 * Includes an interactive **OAuth 2.0 / SSO Authorization Gateway Modal** (`#oauth-modal`) with step-by-step handshake simulation (PKCE code exchange, scope grant, token vault storage).
 
-### 3.11 `src/watchdog.rs` — Leader Election & High-Availability Failover
-* Maintains active peer pinging between Primary and Standby instances.
-* Promotes standby to primary automatically upon primary failure.
+### 3.11 `src/watchdog.rs` — Control Plane Resiliency & Dual-Node HA Failover
+* **Architectural Decoupling:** Cheezer Core runs out-of-band on a separate control plane node or cloud server from the customer's monitored infrastructure (Kubernetes / AWS / Vercel).
+* **Self-Resilience Guarantee:** To prevent Cheezer from becoming a single point of failure (SPOF), Cheezer implements an **HA Pair (Primary + Standby)** architecture monitored by an independent TCP proof-of-life Watchdog daemon.
+```text
+           ┌─────────────────────────────┐
+           │      EXTERNAL WATCHDOG      │
+           └──────────────┬──────────────┘
+                          │ (TCP Proof-of-Life Probe)
+          ┌───────────────┴───────────────┐
+          ▼                               ▼
+  ┌───────────────┐               ┌───────────────┐
+  │ Cheezer       │  Heartbeat    │ Cheezer       │
+  │ PRIMARY       │◄─────────────►│ STANDBY       │
+  │ (Server A)    │               │ (Server B)    │
+  └───────┬───────┘               └───────┬───────┘
+          │                               │
+          └───────────────┬───────────────┘
+                          ▼
+              Customer Infrastructure
+```
+* **Failure Domain Separation:**
+  1. Primary node (`cheezer-core --role=primary`) binds a TCP watchdog listener (`watchdog::run_primary`).
+  2. Standby node (`cheezer-core --role=standby`) polls the Primary node at regular intervals (`watchdog::run_backup_interval`).
+  3. If Server A crashes or network fails, Standby misses 3 heartbeats, logs `Primary watchdog is dead! Backup taking over`, and promotes itself to **PRIMARY** to maintain continuous 24/7 incident response.
+* **Pitch Principle:** *"Cheezer recovers customer infrastructure; an independent Watchdog quorum recovers Cheezer."*
 
 ---
 
