@@ -524,11 +524,6 @@ pub async fn get_provider_projects(
                 }
             }
         }
-        if projects.is_empty() {
-            projects.push(json!({ "id": "prj_cheezer_web", "name": "cheezer-frontend-prod", "framework": "nextjs" }));
-            projects.push(json!({ "id": "prj_api_gateway", "name": "cheezer-api-gateway", "framework": "node" }));
-            projects.push(json!({ "id": "prj_docs_portal", "name": "cheezer-docs-site", "framework": "astro" }));
-        }
     } else if p == "github" {
         let token = store::get_credential("github").ok().flatten().map(|(t, _, _)| t)
             .or_else(|| std::env::var("GITHUB_TOKEN").ok())
@@ -558,10 +553,6 @@ pub async fn get_provider_projects(
                 }
             }
         }
-        if projects.is_empty() {
-            projects.push(json!({ "id": "ziuus/cheezer", "name": "ziuus/cheezer" }));
-            projects.push(json!({ "id": "ziuus/order-microservice", "name": "ziuus/order-microservice" }));
-        }
     } else if p == "k8s" {
         if let Ok(client) = kube::Client::try_default().await {
             use k8s_openapi::api::apps::v1::Deployment;
@@ -578,18 +569,10 @@ pub async fn get_provider_projects(
                 }
             }
         }
-        if projects.is_empty() {
-            projects.push(json!({ "id": "cheezer-core", "name": "cheezer-core (Deployment)" }));
-        }
-    } else if p == "aws" {
-        projects.push(json!({ "id": "floci-order-processor", "name": "floci-order-processor (ECS Task)" }));
-        projects.push(json!({ "id": "sqs-event-bus", "name": "cheezer-alerts (SQS Queue)" }));
-        projects.push(json!({ "id": "s3-audit-bucket", "name": "cheezer-audit-logs (S3 Bucket)" }));
-    } else if p == "gcloud" {
-        projects.push(json!({ "id": "billing-api-service", "name": "billing-api-service (Cloud Run)" }));
-        projects.push(json!({ "id": "auth-gateway", "name": "auth-gateway (Cloud Run)" }));
-    } else {
-        projects.push(json!({ "id": format!("{}-default", p), "name": format!("Default {} Service", p) }));
+    }
+
+    if projects.is_empty() {
+        projects.push(json!({ "id": "unconfigured_or_empty", "name": "No workloads discovered (Check Credentials)" }));
     }
 
     Json(json!({ "provider": p, "projects": projects }))
@@ -641,9 +624,9 @@ pub async fn delete_watcher(
 }
 
 pub async fn get_settings_json() -> impl IntoResponse {
-    let model = std::env::var("LLM_MODEL").unwrap_or_else(|_| "meta/llama-3.2-11b-vision-instruct".to_string());
-    let opa_url = std::env::var("OPA_URL").unwrap_or_else(|_| "http://localhost:8181/v1/data/cheezer/authz/allow".to_string());
-    let webhook_url = std::env::var("NOTIFICATION_WEBHOOK_URL").unwrap_or_else(|_| "http://172.18.100.41:4566/000000000000/cheezer-alerts".to_string());
+    let model = std::env::var("LLM_MODEL").ok().or_else(|| store::get_credential("llm_model").ok().flatten().map(|(t, _, _)| t)).unwrap_or_else(|| "meta/llama-3.2-11b-vision-instruct".to_string());
+    let opa_url = std::env::var("OPA_URL").ok().or_else(|| store::get_credential("opa_url").ok().flatten().map(|(t, _, _)| t)).unwrap_or_else(|| "http://localhost:8181/v1/data/cheezer/authz/allow".to_string());
+    let webhook_url = std::env::var("NOTIFICATION_WEBHOOK_URL").ok().or_else(|| store::get_credential("webhook_url").ok().flatten().map(|(t, _, _)| t)).unwrap_or_else(|| "http://172.18.100.41:4566/000000000000/cheezer-alerts".to_string());
     let api_key = std::env::var("CHEEZER_API_KEY").unwrap_or_else(|_| "hackathon2026".to_string());
     let devin_key = std::env::var("DEVIN_API_KEY").ok().or_else(|| store::get_credential("devin").ok().flatten().map(|(t, _, _)| t)).unwrap_or_default();
     let github_token = std::env::var("GITHUB_TOKEN").ok().or_else(|| store::get_credential("github").ok().flatten().map(|(t, _, _)| t)).unwrap_or_default();
@@ -681,13 +664,22 @@ pub async fn update_settings_json(
     Json(req): Json<UpdateSettingsRequest>
 ) -> impl IntoResponse {
     if let Some(m) = req.llm_model {
-        if !m.trim().is_empty() { std::env::set_var("LLM_MODEL", m.trim()); }
+        if !m.trim().is_empty() { 
+            std::env::set_var("LLM_MODEL", m.trim()); 
+            let _ = store::save_credential("llm_model", m.trim(), "", "CONFIGURED");
+        }
     }
     if let Some(o) = req.opa_url {
-        if !o.trim().is_empty() { std::env::set_var("OPA_URL", o.trim()); }
+        if !o.trim().is_empty() { 
+            std::env::set_var("OPA_URL", o.trim()); 
+            let _ = store::save_credential("opa_url", o.trim(), "", "CONFIGURED");
+        }
     }
     if let Some(w) = req.notification_webhook_url {
-        if !w.trim().is_empty() { std::env::set_var("NOTIFICATION_WEBHOOK_URL", w.trim()); }
+        if !w.trim().is_empty() { 
+            std::env::set_var("NOTIFICATION_WEBHOOK_URL", w.trim()); 
+            let _ = store::save_credential("webhook_url", w.trim(), "", "CONFIGURED");
+        }
     }
     if let Some(dk) = req.devin_api_key {
         if !dk.trim().is_empty() {
@@ -1068,7 +1060,11 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                                 <option value="k8s">Kubernetes Cluster</option>
                                 <option value="aws">AWS Cloud (ECS/S3)</option>
                                 <option value="gcloud">Google Cloud Run</option>
+                                <option value="azure">Microsoft Azure</option>
+                                <option value="cloudflare">Cloudflare (Workers/Pages)</option>
                                 <option value="render">Render PaaS</option>
+                                <option value="heroku">Heroku App</option>
+                                <option value="digitalocean">DigitalOcean App Platform</option>
                             </select>
                         </div>
                         <div>
@@ -1618,11 +1614,14 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 const data = await res.json();
                 let html = '';
                 for (const p of (data.projects || [])) {
-                    html += '<option value="' + p.id + '">' + p.name + ' (' + p.id + ')</option>';
+                    html += '<option value="' + p.id + '">' + p.name + '</option>';
+                }
+                if (html === '') {
+                    html = '<option value="">No workloads found (Check provider config)</option>';
                 }
                 select.innerHTML = html;
             } catch (err) {
-                select.innerHTML = '<option value="default-' + provider + '">Default ' + provider + ' Workload</option>';
+                select.innerHTML = '<option value="">Error fetching workloads</option>';
             }
         }
 
@@ -1630,15 +1629,18 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             const select = document.getElementById('watcher-repo-select');
             select.innerHTML = '<option>Loading repositories...</option>';
             try {
-                const res = await fetch('/api/connections/github/repos');
+                const res = await fetch('/api/connections/github/projects');
                 const data = await res.json();
                 let html = '';
                 for (const r of (data.projects || [])) {
                     html += '<option value="' + r.id + '">' + r.name + '</option>';
                 }
+                if (html === '') {
+                    html = '<option value="">No repos found (Check GitHub config)</option>';
+                }
                 select.innerHTML = html;
             } catch (err) {
-                select.innerHTML = '<option value="ziuus/cheezer">ziuus/cheezer</option>';
+                select.innerHTML = '<option value="">Error fetching repositories</option>';
             }
         }
 
