@@ -1,3 +1,4 @@
+use crate::action::Action;
 use crate::ingest::Alert;
 use crate::{store, fallback, guard, llm, policy, executor};
 
@@ -15,9 +16,9 @@ pub async fn process_alert(alert: Alert) {
 
     if let Some(action) = fallback::match_rule(&alert) {
         log::info!("Matched known pattern for {}: {:?}", signature, action);
-        if action.starts_with("log") {
-             let _ = store::log_incident(signature, severity, "rule", &action, "logged");
-             let _ = store::log_action(alert_id, "rule", &action);
+        if action.action_type() == "log" {
+             let _ = store::log_incident(signature, severity, "rule", &action.to_action_string(), "logged");
+             let _ = store::log_action(alert_id, "rule", &action.to_action_string());
              return;
         }
         execute_action(alert_id, signature, severity, "rule", &action, &alert).await;
@@ -36,29 +37,32 @@ pub async fn process_alert(alert: Alert) {
 
     log::info!("Escalating novel alert {} to LLM", signature);
     let decision = llm::analyze(&alert).await;
-    if decision.action.starts_with("log") || decision.action == "none" {
-        let _ = store::log_incident(signature, severity, &decision.mode, &decision.action, "logged");
-        let _ = store::log_action(alert_id, &decision.mode, &decision.action);
+    if decision.action.action_type() == "log" || decision.action == Action::None {
+        let _ = store::log_incident(signature, severity, &decision.mode, &decision.action.to_action_string(), "logged");
+        let _ = store::log_action(alert_id, &decision.mode, &decision.action.to_action_string());
         return;
     }
     execute_action(alert_id, signature, severity, &decision.mode, &decision.action, &alert).await;
 }
 
-async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &str, action: &str, alert: &Alert) {
-    let (action_type, resource, target_replicas, cmd) = parse_action(action);
+async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &str, action: &Action, alert: &Alert) {
+    let action_str = action.to_action_string();
+    let target_res = action.target_resource();
     let target_resource = if let Some(pod) = alert.labels.get("pod") {
         pod.as_str()
     } else if let Some(node) = alert.labels.get("node") {
         node.as_str()
+    } else if !target_res.is_empty() {
+        &target_res
     } else {
-        resource
+        action.resource_type()
     };
 
     // 1. Remediation Guard Check (sits BEFORE OPA policy check)
     match guard::RemediationGuard::evaluate(alert_id, target_resource, action) {
         guard::GuardResult::Block(reason) => {
             log::warn!("Action blocked by Remediation Guard: {}", reason);
-            let _ = store::log_incident(signature, severity, mode, action, "requires_human_intervention");
+            let _ = store::log_incident(signature, severity, mode, &action_str, "requires_human_intervention");
             let _ = store::log_action(alert_id, mode, &format!("blocked_by_guard: {}", reason));
             return;
         }
@@ -66,48 +70,30 @@ async fn execute_action(alert_id: i64, signature: &str, severity: &str, mode: &s
     }
 
     // 2. OPA Policy Check
-    let is_allowed = policy::check_action(action_type, resource, target_replicas, cmd).await;
+    let is_allowed = policy::check_action(action).await;
     if !is_allowed {
-        log::warn!("Action blocked by OPA policy: {}", action);
-        let _ = store::log_incident(signature, severity, mode, action, "blocked");
-        let _ = store::log_action(alert_id, mode, &format!("blocked: {}", action));
+        log::warn!("Action blocked by OPA policy: {}", action_str);
+        let _ = store::log_incident(signature, severity, mode, &action_str, "blocked");
+        let _ = store::log_action(alert_id, mode, &format!("blocked: {}", action_str));
         return;
     }
 
     // 3. Executor
     match executor::apply_action(action, alert).await {
         Ok(_) => {
-            log::info!("Successfully executed action: {}", action);
-            let _ = store::log_remediation(alert_id, target_resource, action);
-            let _ = store::log_incident(signature, severity, mode, action, "executed");
-            let _ = store::log_action(alert_id, mode, action);
+            log::info!("Successfully executed action: {}", action_str);
+            let _ = store::log_remediation(alert_id, target_resource, &action_str);
+            let _ = store::log_incident(signature, severity, mode, &action_str, "executed");
+            let _ = store::log_action(alert_id, mode, &action_str);
         }
         Err(e) => {
             log::error!("Failed to execute action: {}", e);
-            let _ = store::log_incident(signature, severity, mode, action, "failed");
-            let _ = store::log_action(alert_id, mode, &format!("failed: {}", action));
+            let _ = store::log_incident(signature, severity, mode, &action_str, "failed");
+            let _ = store::log_action(alert_id, mode, &format!("failed: {}", action_str));
         }
     }
 }
 
-
-fn parse_action(action: &str) -> (&str, &str, i32, Vec<&str>) {
-    if action.starts_with("restart pod") {
-        ("restart", "pod", 0, vec![])
-    } else if action.starts_with("delete namespace") {
-        ("delete", "namespace", 0, vec![])
-    } else if action.starts_with("scale") {
-        let parts: Vec<&str> = action.split_whitespace().collect();
-        let target_replicas = parts.last().and_then(|s| s.parse().ok()).unwrap_or(0);
-        ("scale", "deployment", target_replicas, vec![])
-    } else if action.starts_with("exec") {
-        ("exec", "pod", 0, vec!["exec"])
-    } else if action.starts_with("modify rbac") {
-        ("modify", "rbac", 0, vec![])
-    } else {
-        ("unknown", "unknown", 0, vec![])
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -124,7 +110,6 @@ mod tests {
             std::env::set_var("MOCK_EXECUTOR", "true");
         }
         store::init_db().unwrap();
-
         store::clear_db().unwrap();
         llm::reset_llm_call_count();
 
@@ -168,13 +153,13 @@ mod tests {
         // Incident 1 assertions
         assert_eq!(incidents[0].signature, "CrashLoopBackOff");
         assert_eq!(incidents[0].mode, "rule");
-        assert_eq!(incidents[0].action, "restart pod");
+        assert_eq!(incidents[0].action, "restart pod test-pod-1");
         assert_eq!(incidents[0].status, "executed");
 
         // Incident 2 assertions
         assert_eq!(incidents[1].signature, "OOMKilled");
         assert_eq!(incidents[1].mode, "rule");
-        assert_eq!(incidents[1].action, "restart pod");
+        assert_eq!(incidents[1].action, "restart pod test-pod-2");
         assert_eq!(incidents[1].status, "executed");
 
         println!("SUCCESS: CrashLoopBackOff and OOMKilled triaged via rule path with zero LLM calls and logged to SQLite incidents table!");
@@ -185,7 +170,7 @@ mod tests {
         let _guard = TEST_MUTEX.lock().unwrap();
         unsafe {
             std::env::set_var("MOCK_EXECUTOR", "true");
-            std::env::set_var("MOCK_LLM_RESPONSE", "restart pod");
+            std::env::remove_var("MOCK_LLM_RESPONSE");
         }
         store::init_db().unwrap();
         store::clear_db().unwrap();
@@ -215,10 +200,110 @@ mod tests {
         assert_eq!(incidents.len(), 1, "Expected 1 incident in database");
         assert_eq!(incidents[0].signature, "UnknownDatabaseLatencySpike");
         assert_eq!(incidents[0].mode, "ai");
-        assert_eq!(incidents[0].action, "restart pod");
+        assert_eq!(incidents[0].action, "restart pod db-pod-0");
         assert_eq!(incidents[0].status, "executed");
 
         println!("SUCCESS: Novel alert UnknownDatabaseLatencySpike escalated to LLM, evaluated by policy gate, and saved to SQLite with mode='ai'!");
+    }
+
+    #[tokio::test]
+    async fn test_llm_structured_parsing_success() {
+        let _guard = TEST_MUTEX.lock().unwrap();
+        let valid_json = serde_json::json!({
+            "incident_class": "DatabaseLatencySpike",
+            "confidence": 0.95,
+            "proposed_action": "RestartPod",
+            "target": {
+                "namespace": "production",
+                "resource": "db-pod-0"
+            },
+            "reason": "Database latency spike detected"
+        }).to_string();
+
+        unsafe {
+            std::env::set_var("MOCK_EXECUTOR", "true");
+            std::env::set_var("MOCK_LLM_RESPONSE", &valid_json);
+        }
+        store::init_db().unwrap();
+        store::clear_db().unwrap();
+        llm::reset_llm_call_count();
+
+        let mut labels = HashMap::new();
+        labels.insert("alertname".to_string(), "UnknownDatabaseLatencySpike".to_string());
+        labels.insert("severity".to_string(), "critical".to_string());
+        labels.insert("pod".to_string(), "db-pod-0".to_string());
+        labels.insert("namespace".to_string(), "production".to_string());
+
+        let alert = Alert {
+            status: "firing".to_string(),
+            labels,
+            annotations: HashMap::new(),
+        };
+
+        process_alert(alert).await;
+
+        let incidents = store::get_incidents().unwrap();
+        assert_eq!(incidents.len(), 1);
+        assert_eq!(incidents[0].signature, "UnknownDatabaseLatencySpike");
+        assert_eq!(incidents[0].mode, "ai");
+        assert_eq!(incidents[0].action, "restart pod db-pod-0");
+        assert_eq!(incidents[0].status, "executed");
+
+        unsafe {
+            std::env::remove_var("MOCK_LLM_RESPONSE");
+        }
+
+        println!("SUCCESS: LLM response parsed into structured Action enum and executed!");
+    }
+
+    #[tokio::test]
+    async fn test_llm_invalid_action_triggers_fallback() {
+        let _guard = TEST_MUTEX.lock().unwrap();
+        let invalid_json = serde_json::json!({
+            "incident_class": "MaliciousAttempt",
+            "confidence": 0.9,
+            "proposed_action": "kubectl delete namespace production",
+            "target": {
+                "namespace": "production",
+                "resource": "all"
+            },
+            "reason": "Malicious command execution proposal"
+        }).to_string();
+
+        unsafe {
+            std::env::set_var("MOCK_EXECUTOR", "true");
+            std::env::set_var("MOCK_LLM_RESPONSE", &invalid_json);
+        }
+        store::init_db().unwrap();
+        store::clear_db().unwrap();
+        llm::reset_llm_call_count();
+
+        let mut labels = HashMap::new();
+        labels.insert("alertname".to_string(), "UnknownAnomaly".to_string());
+        labels.insert("severity".to_string(), "critical".to_string());
+        labels.insert("pod".to_string(), "app-pod-1".to_string());
+        labels.insert("namespace".to_string(), "production".to_string());
+
+        let alert = Alert {
+            status: "firing".to_string(),
+            labels,
+            annotations: HashMap::new(),
+        };
+
+        process_alert(alert).await;
+
+        let incidents = store::get_incidents().unwrap();
+        assert_eq!(incidents.len(), 1);
+        assert_eq!(incidents[0].signature, "UnknownAnomaly");
+        assert_eq!(incidents[0].mode, "fallback");
+        assert_eq!(incidents[0].action, "restart pod app-pod-1");
+        assert_eq!(incidents[0].status, "executed");
+
+        unsafe {
+            std::env::remove_var("MOCK_LLM_RESPONSE");
+        }
+
+        println!("SUCCESS: Unallowed raw LLM action was rejected and safely triggered Local Fallback Mode!");
     }
 
     #[tokio::test]
@@ -233,7 +318,6 @@ mod tests {
         store::clear_db().unwrap();
         llm::reset_llm_call_count();
 
-        // Novel alert that times out during LLM resolution
         let mut labels = HashMap::new();
         labels.insert("alertname".to_string(), "NetworkPartitionDetected".to_string());
         labels.insert("severity".to_string(), "critical".to_string());
@@ -246,21 +330,17 @@ mod tests {
             annotations: HashMap::new(),
         };
 
-        // Process alert
         process_alert(alert).await;
 
-        // 1. Assert LLM attempt was registered before timing out
         assert_eq!(llm::get_llm_call_count(), 1, "LLM attempt should be registered before timing out!");
 
-        // 2. Assert incident is recorded in SQLite with mode='fallback', safe action, and status='executed'
         let incidents = store::get_incidents().unwrap();
         assert_eq!(incidents.len(), 1, "Expected 1 incident in database");
         assert_eq!(incidents[0].signature, "NetworkPartitionDetected");
         assert_eq!(incidents[0].mode, "fallback");
-        assert_eq!(incidents[0].action, "restart pod");
+        assert_eq!(incidents[0].action, "restart pod net-pod-0");
         assert_eq!(incidents[0].status, "executed");
 
-        // Clean up environment variables
         unsafe {
             std::env::remove_var("FORCE_LLM_TIMEOUT");
         }
@@ -271,15 +351,25 @@ mod tests {
     #[tokio::test]
     async fn test_opa_blocks_dangerous_actions() {
         let _guard = TEST_MUTEX.lock().unwrap();
+        let unsafe_json = serde_json::json!({
+            "incident_class": "UnsafeRequest",
+            "confidence": 0.95,
+            "proposed_action": "DeleteNamespace",
+            "target": {
+                "namespace": "default",
+                "resource": "default"
+            },
+            "reason": "Requesting namespace deletion"
+        }).to_string();
+
         unsafe {
             std::env::set_var("MOCK_EXECUTOR", "true");
-            std::env::set_var("MOCK_LLM_RESPONSE", "delete namespace default");
+            std::env::set_var("MOCK_LLM_RESPONSE", &unsafe_json);
         }
         store::init_db().unwrap();
         store::clear_db().unwrap();
         llm::reset_llm_call_count();
 
-        // Alert where LLM attempts dangerous action (namespace deletion)
         let mut labels = HashMap::new();
         labels.insert("alertname".to_string(), "UnsafeLLMRecommendation".to_string());
         labels.insert("severity".to_string(), "critical".to_string());
@@ -293,7 +383,6 @@ mod tests {
 
         process_alert(alert).await;
 
-        // Verify OPA policy gate blocked the execution and persisted status = 'blocked'
         let incidents = store::get_incidents().unwrap();
         assert_eq!(incidents.len(), 1, "Expected 1 incident in database");
         assert_eq!(incidents[0].signature, "UnsafeLLMRecommendation");
@@ -320,7 +409,6 @@ mod tests {
         llm::reset_llm_call_count();
         policy::reset_policy_call_count();
 
-        // Simulate 4 rapid pod restarts on the exact same resource
         for _ in 1..=4 {
             let mut labels = HashMap::new();
             labels.insert("alertname".to_string(), "CrashLoopBackOff".to_string());
@@ -340,16 +428,13 @@ mod tests {
         let incidents = store::get_incidents().unwrap();
         assert_eq!(incidents.len(), 4, "Expected 4 incident entries");
 
-        // The first 3 actions should be executed
         assert_eq!(incidents[0].status, "executed");
         assert_eq!(incidents[1].status, "executed");
         assert_eq!(incidents[2].status, "executed");
 
-        // The 4th action MUST be blocked by RemediationGuard with status 'requires_human_intervention'
         assert_eq!(incidents[3].status, "requires_human_intervention");
-        assert_eq!(incidents[3].action, "restart pod");
+        assert_eq!(incidents[3].action, "restart pod flapping-pod-x");
 
-        // Verify OPA policy call count was ONLY 3; the 4th attempt was blocked by guard BEFORE OPA!
         assert_eq!(policy::get_policy_call_count(), 3, "OPA must only be called 3 times; 4th attempt must be blocked by RemediationGuard before OPA!");
 
         unsafe {
@@ -359,6 +444,7 @@ mod tests {
         println!("SUCCESS: RemediationGuard blocked 4th rapid pod restart before OPA was reached, marking status='requires_human_intervention'!");
     }
 }
+
 
 
 

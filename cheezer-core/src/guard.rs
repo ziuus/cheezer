@@ -1,3 +1,4 @@
+use crate::action::Action;
 use crate::store;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -9,7 +10,7 @@ pub enum GuardResult {
 pub struct RemediationGuard;
 
 impl RemediationGuard {
-    pub fn evaluate(incident_id: i64, resource: &str, _action: &str) -> GuardResult {
+    pub fn evaluate(incident_id: i64, resource: &str, _action: &Action) -> GuardResult {
         if resource.is_empty() || resource == "unknown" {
             return GuardResult::Allow;
         }
@@ -61,17 +62,21 @@ mod tests {
         store::clear_db().unwrap();
 
         let resource = "test-pod-guard";
+        let test_action = Action::RestartPod {
+            pod: resource.to_string(),
+            namespace: "default".to_string(),
+        };
 
         // Initial check should allow
-        assert_eq!(RemediationGuard::evaluate(1, resource, "restart pod"), GuardResult::Allow);
+        assert_eq!(RemediationGuard::evaluate(1, resource, &test_action), GuardResult::Allow);
 
         // Log 3 remediations for resource
-        store::log_remediation(1, resource, "restart pod").unwrap();
-        store::log_remediation(1, resource, "restart pod").unwrap();
-        store::log_remediation(1, resource, "restart pod").unwrap();
+        store::log_remediation(1, resource, &test_action.to_action_string()).unwrap();
+        store::log_remediation(1, resource, &test_action.to_action_string()).unwrap();
+        store::log_remediation(1, resource, &test_action.to_action_string()).unwrap();
 
         // 4th evaluation should be blocked by Per-Resource Limit (Max 3)
-        match RemediationGuard::evaluate(1, resource, "restart pod") {
+        match RemediationGuard::evaluate(1, resource, &test_action) {
             GuardResult::Block(reason) => {
                 assert!(reason.contains("Per-resource limit exceeded"));
             }
@@ -81,3 +86,4 @@ mod tests {
         println!("SUCCESS: RemediationGuard per-resource limit threshold verified!");
     }
 }
+

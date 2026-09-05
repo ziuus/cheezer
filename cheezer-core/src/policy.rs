@@ -1,3 +1,4 @@
+use crate::action::Action;
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -17,7 +18,7 @@ pub fn reset_policy_call_count() {
 struct OpaInput<'a> {
     action: &'a str,
     resource: &'a str,
-    target_replicas: i32,
+    target_replicas: u32,
     command: Vec<&'a str>,
 }
 
@@ -26,13 +27,18 @@ struct OpaQuery<'a> {
     input: OpaInput<'a>,
 }
 
-pub async fn check_action(action: &str, resource: &str, target_replicas: i32, command: Vec<&str>) -> bool {
+pub async fn check_action(action: &Action) -> bool {
     POLICY_CALL_COUNT.fetch_add(1, Ordering::Relaxed);
+
+    let action_type = action.action_type();
+    let resource = action.resource_type();
+    let target_replicas = action.target_replicas();
+    let command = action.commands();
 
     let client = reqwest::Client::new();
     let query = OpaQuery {
         input: OpaInput {
-            action,
+            action: action_type,
             resource,
             target_replicas,
             command: command.clone(),
@@ -45,18 +51,23 @@ pub async fn check_action(action: &str, resource: &str, target_replicas: i32, co
         .send()
         .await
     {
-        if let Ok(json) = res.json::<Value>().await {
-            if let Some(allow) = json.get("result").and_then(|v| v.as_bool()) {
-                return allow;
+        let status = res.status();
+        if status.is_success() {
+            if let Ok(json) = res.json::<Value>().await {
+                if let Some(allow) = json.get("result").and_then(|v| v.as_bool()) {
+                    return allow;
+                }
             }
         }
+        log::warn!("OPA HTTP server returned non-success response: {status}. Defaulting to FAIL-CLOSED (DENY).");
+        return false;
     }
 
     // Fallback embedded evaluator matching cheezer.rego logic if OPA HTTP server is offline
-    evaluate_rego_embedded(action, resource, target_replicas, &command)
+    evaluate_rego_embedded(action_type, resource, target_replicas, &command)
 }
 
-pub fn evaluate_rego_embedded(action: &str, resource: &str, target_replicas: i32, command: &[&str]) -> bool {
+pub fn evaluate_rego_embedded(action: &str, resource: &str, target_replicas: u32, command: &[&str]) -> bool {
     if action == "delete" && resource == "namespace" {
         return false;
     }
@@ -79,23 +90,31 @@ mod tests {
     #[tokio::test]
     async fn test_opa_deny_rules() {
         // 1. Delete namespace -> Blocked
-        assert!(!check_action("delete", "namespace", 0, vec![]).await, "Delete namespace MUST be blocked!");
+        let delete_ns = Action::DeleteNamespace { namespace: "production".to_string() };
+        assert!(!check_action(&delete_ns).await, "Delete namespace MUST be blocked!");
 
         // 2. Container shell exec -> Blocked
-        assert!(!check_action("exec", "pod", 0, vec!["exec"]).await, "Exec command MUST be blocked!");
+        let exec_cmd = Action::ExecCommand { pod: "app-pod".to_string(), command: vec!["exec".to_string(), "sh".to_string()] };
+        assert!(!check_action(&exec_cmd).await, "Exec command MUST be blocked!");
 
         // 3. Scale > 10 -> Blocked
-        assert!(!check_action("scale", "deployment", 15, vec![]).await, "Scale > 10 MUST be blocked!");
+        let scale_high = Action::ScaleDeployment { deployment: "myapp".to_string(), target_replicas: 15, namespace: "default".to_string() };
+        assert!(!check_action(&scale_high).await, "Scale > 10 MUST be blocked!");
 
         // 4. Modify RBAC -> Blocked
-        assert!(!check_action("modify", "rbac", 0, vec![]).await, "Modify RBAC MUST be blocked!");
+        let modify_rbac = Action::ModifyRbac { resource: "cluster-admin".to_string() };
+        assert!(!check_action(&modify_rbac).await, "Modify RBAC MUST be blocked!");
 
         // 5. Safe actions -> Allowed
-        assert!(check_action("restart", "pod", 0, vec![]).await, "Restart pod MUST be allowed!");
-        assert!(check_action("scale", "deployment", 5, vec![]).await, "Scale <= 10 MUST be allowed!");
+        let restart_pod = Action::RestartPod { pod: "app-pod".to_string(), namespace: "default".to_string() };
+        assert!(check_action(&restart_pod).await, "Restart pod MUST be allowed!");
+
+        let scale_ok = Action::ScaleDeployment { deployment: "myapp".to_string(), target_replicas: 5, namespace: "default".to_string() };
+        assert!(check_action(&scale_ok).await, "Scale <= 10 MUST be allowed!");
         
         println!("SUCCESS: OPA policy rules verified - dangerous actions blocked, safe actions allowed!");
     }
 }
+
 
 
