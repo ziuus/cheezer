@@ -1518,15 +1518,15 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
             select.innerHTML = '<option>Loading discovered workloads...</option>';
             
             try {
-                const res = await fetch(\`/api/connections/\${provider}/projects\`);
+                const res = await fetch('/api/connections/' + provider + '/projects');
                 const data = await res.json();
                 let html = '';
                 for (const p of (data.projects || [])) {
-                    html += \`<option value="\${p.id}">\${p.name} (\${p.id})</option>\`;
+                    html += '<option value="' + p.id + '">' + p.name + ' (' + p.id + ')</option>';
                 }
                 select.innerHTML = html;
             } catch (err) {
-                select.innerHTML = \`<option value="default-\${provider}">Default \${provider} Workload</option>\`;
+                select.innerHTML = '<option value="default-' + provider + '">Default ' + provider + ' Workload</option>';
             }
         }
 
@@ -1538,7 +1538,7 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 const data = await res.json();
                 let html = '';
                 for (const r of (data.projects || [])) {
-                    html += \`<option value="\${r.id}">\${r.name}</option>\`;
+                    html += '<option value="' + r.id + '">' + r.name + '</option>';
                 }
                 select.innerHTML = html;
             } catch (err) {
@@ -1573,24 +1573,24 @@ const DASHBOARD_HTML: &str = r#"<!DOCTYPE html>
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert(\`✅ \${data.message}\`);
+                    alert('✅ ' + (data.message || 'Watcher created successfully'));
                     closeAddWatcherModal();
                     fetchWatchers();
                 } else {
-                    alert(\`❌ Error creating watcher: \${data.message}\`);
+                    alert('❌ Error creating watcher: ' + (data.message || JSON.stringify(data)));
                 }
             } catch (err) {
-                alert(\`Error saving watcher: \${err}\`);
+                alert('Error saving watcher: ' + err);
             }
         }
 
         async function deleteWatcher(id) {
-            if (!confirm(\`Are you sure you want to remove watcher #\${id}?\`)) return;
+            if (!confirm('Are you sure you want to remove watcher #' + id + '?')) return;
             try {
-                await fetch(\`/api/watchers/\${id}\`, { method: 'DELETE' });
+                await fetch('/api/watchers/' + id, { method: 'DELETE' });
                 fetchWatchers();
             } catch (err) {
-                alert(\`Error deleting watcher: \${err}\`);
+                alert('Error deleting watcher: ' + err);
             }
         }
 
