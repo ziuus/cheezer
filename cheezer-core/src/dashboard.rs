@@ -1569,24 +1569,100 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                         </div>
                     </div>
 
-                    <div class="pt-2 border-t border-[#DADCE0]/80">
-                        <label class="block text-xs font-mono text-[#444746] uppercase mb-1">NVIDIA NIM LLM Model String</label>
-                        <input type="text" id="setting-llm-model" class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
+                    <div class="pt-2 border-t border-[#DADCE0]/80 space-y-4">
+                        <div>
+                            <label class="block text-xs font-mono text-[#444746] uppercase mb-1">NVIDIA NIM LLM Model String</label>
+                            <input type="text" id="setting-llm-model" class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-mono text-[#444746] uppercase mb-1">OPA Fail-Closed Policy Endpoint</label>
+                            <input type="text" id="setting-opa-url" class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-mono text-[#444746] uppercase mb-1">OPA Fail-Closed Policy Endpoint</label>
-                        <input type="text" id="setting-opa-url" class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
+                    <!-- Granular Platform & Process Autonomy Policy Matrix -->
+                    <div class="pt-4 border-t border-[#DADCE0] space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-[#1F1F1F] uppercase flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[#0B57D0]">tune</span>
+                                Platform & Process Autonomy Rules Matrix
+                            </label>
+                            <span class="text-[11px] text-[#5F6368]">Configure auto-fix vs manual intervention per platform & process pattern</span>
+                        </div>
+                        
+                        <div class="bg-[#F8F9FA] p-4 rounded-2xl border border-[#DADCE0] space-y-3 text-xs">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-[#5F6368] font-medium mb-1">Platform Target</label>
+                                    <select id="setting-matrix-platform" class="w-full bg-white border border-[#DADCE0] rounded-lg px-2.5 py-1.5 text-xs text-[#1F1F1F]">
+                                        <option value="all">All Platforms (K8s, Docker, Vercel, Render, AWS)</option>
+                                        <option value="k8s">Kubernetes Clusters</option>
+                                        <option value="docker">Docker Runtime</option>
+                                        <option value="vercel">Vercel Deployments</option>
+                                        <option value="render">Render Cloud</option>
+                                        <option value="aws">AWS EC2 / EKS</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-[#5F6368] font-medium mb-1">Process / Namespace Pattern</label>
+                                    <input type="text" id="setting-matrix-pattern" placeholder="e.g. production/*, payment-service" value="production/*" class="w-full bg-white border border-[#DADCE0] rounded-lg px-2.5 py-1.5 text-xs text-[#1F1F1F] font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-[#5F6368] font-medium mb-1">Autonomy Fix Mode</label>
+                                    <select id="setting-matrix-mode" class="w-full bg-white border border-[#DADCE0] rounded-lg px-2.5 py-1.5 text-xs font-bold text-[#0B57D0]">
+                                        <option value="AUTONOMOUS">🤖 Full Autonomous (Auto-Remediate)</option>
+                                        <option value="MANUAL_APPROVAL">✋ Require Manual SRE Approval</option>
+                                        <option value="OBSERVE_ONLY">👁️ Observe & Log Only (No Fix)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-[#5F6368] font-medium mb-1">Severity Filter</label>
+                                    <select id="setting-matrix-severity" class="w-full bg-white border border-[#DADCE0] rounded-lg px-2.5 py-1.5 text-xs text-[#1F1F1F]">
+                                        <option value="critical">Critical Only</option>
+                                        <option value="warning">Critical & Warning</option>
+                                        <option value="all">All Severities</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-mono text-[#444746] uppercase mb-1">Notification Webhook / Floci SQS URL</label>
-                        <input type="text" id="setting-webhook-url" class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
+                    <!-- Outbound Communication Channels -->
+                    <div class="pt-4 border-t border-[#DADCE0] space-y-3">
+                        <label class="block text-xs font-bold text-[#1F1F1F] uppercase flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[#34A853]">notifications</span>
+                            Outbound Communication & Webhook Alert Channels
+                        </label>
+
+                        <div>
+                            <label class="block text-[11px] text-[#5F6368] mb-1 font-mono">Slack / Discord / PagerDuty / Opsgenie Webhook URL</label>
+                            <input type="text" id="setting-webhook-url" placeholder="https://hooks.slack.com/services/... or PagerDuty V2 Webhook URL..." class="w-full bg-[#F3F6FC] border border-[#DADCE0] rounded-lg px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]">
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 pt-1 text-xs text-[#444746]">
+                            <label class="flex items-center space-x-2 bg-[#F8F9FA] p-2 rounded-lg border border-[#DADCE0] cursor-pointer">
+                                <input type="checkbox" id="notify-incident" checked class="rounded border-[#DADCE0] text-[#0B57D0]">
+                                <span>Notify Incident Detected</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-[#F8F9FA] p-2 rounded-lg border border-[#DADCE0] cursor-pointer">
+                                <input type="checkbox" id="notify-approval" checked class="rounded border-[#DADCE0] text-[#0B57D0]">
+                                <span>Notify Approval Needed</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-[#F8F9FA] p-2 rounded-lg border border-[#DADCE0] cursor-pointer">
+                                <input type="checkbox" id="notify-executed" checked class="rounded border-[#DADCE0] text-[#0B57D0]">
+                                <span>Notify Fix Executed</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-[#F8F9FA] p-2 rounded-lg border border-[#DADCE0] cursor-pointer">
+                                <input type="checkbox" id="notify-opa" checked class="rounded border-[#DADCE0] text-[#0B57D0]">
+                                <span>Notify OPA Blocked</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="pt-4 flex justify-end">
-                        <button type="submit" class="btn-primary flex items-center gap-2 font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]  flex items-center gap-2">
-                            <span class="material-symbols-outlined  ">save</span>
+                        <button type="submit" class="btn-primary flex items-center gap-2 font-bold px-5 py-2.5 rounded-lg text-xs transition shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] flex items-center gap-2">
+                            <span class="material-symbols-outlined">save</span>
                             <span>Save Global Configuration</span>
                         </button>
                     </div>
@@ -2275,6 +2351,8 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             }
         }
 
+        let openHistoryDrawers = new Set();
+
         function renderHistory(list) {
             const body = document.getElementById('history-body');
             if (!body) return;
@@ -2424,6 +2502,15 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 `;
             }
             body.innerHTML = html;
+
+            openHistoryDrawers.forEach(id => {
+                const detailRow = document.getElementById(`history-detail-${id}`);
+                const chevron = document.getElementById(`chevron-${id}`);
+                if (detailRow) {
+                    detailRow.classList.remove('hidden');
+                    if (chevron) chevron.textContent = 'expand_less';
+                }
+            });
         }
 
         function toggleHistoryDetail(id) {
@@ -2432,9 +2519,11 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             if (!detailRow) return;
             if (detailRow.classList.contains('hidden')) {
                 detailRow.classList.remove('hidden');
+                openHistoryDrawers.add(id);
                 if (chevron) chevron.textContent = 'expand_less';
             } else {
                 detailRow.classList.add('hidden');
+                openHistoryDrawers.delete(id);
                 if (chevron) chevron.textContent = 'expand_more';
             }
         }
