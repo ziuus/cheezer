@@ -290,9 +290,7 @@ pub async fn get_connections_json() -> impl IntoResponse {
         ("grafana", "Grafana / OpenTelemetry Collector", "Telemetry & Webhooks", "http://127.0.0.1:9090"),
     ];
 
-    let mut connections = Vec::new();
-
-    for (service_id, name, conn_type, default_endpoint) in services {
+    let futures: Vec<_> = services.into_iter().map(|(service_id, name, conn_type, default_endpoint)| async move {
         let saved_cred = store::get_credential(service_id).unwrap_or(None);
         let env_token = match service_id {
             "github" => std::env::var("GITHUB_TOKEN").ok(),
@@ -328,7 +326,7 @@ pub async fn get_connections_json() -> impl IntoResponse {
             "UNCONFIGURED".to_string()
         };
 
-        connections.push(json!({
+        json!({
             "service": service_id,
             "name": name,
             "type": conn_type,
@@ -337,8 +335,10 @@ pub async fn get_connections_json() -> impl IntoResponse {
             "has_token": has_config,
             "endpoint": endpoint,
             "latency": latency
-        }));
-    }
+        })
+    }).collect();
+
+    let connections = futures::future::join_all(futures).await;
 
     Json(json!({ "connections": connections }))
 }
@@ -2162,6 +2162,15 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 if (conn.service === 'devin') oauthButtonText = '🤖 Configure Devin API Key';
                 if (conn.service === 'render') oauthButtonText = '🔑 Configure Render Key';
                 if (conn.service === 'aws') oauthButtonText = '🔑 Configure AWS Keys';
+
+                let inputPlaceholder = 'Paste Personal Access Token (PAT)';
+                if (conn.service === 'github') inputPlaceholder = 'ghp_xxxxxxxxxxxxxxxxxxxx or github_pat_xxxx';
+                if (conn.service === 'vercel') inputPlaceholder = 'vtp_xxxxxxxxxxxxxxxxxxxx';
+                if (conn.service === 'devin') inputPlaceholder = 'devin_api_key_xxxx';
+                if (conn.service === 'render') inputPlaceholder = 'rnd_xxxxxxxxxxxxxxxxxxxx';
+                if (conn.service === 'aws') inputPlaceholder = 'AKIAxxxxxxxxxxxxxxxx / Secret Key';
+                if (conn.service === 'gcp') inputPlaceholder = 'GCP Service Account JSON / Token';
+                if (conn.service === 'k8s') inputPlaceholder = 'Kubeconfig bearer token';
 
                 let accountInfoHtml = '';
                 if (isAuth) {
