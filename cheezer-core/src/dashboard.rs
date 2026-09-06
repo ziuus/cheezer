@@ -1960,35 +1960,33 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             if (statusEl) statusEl.classList.add('hidden');
             if (authBtn) {
                 authBtn.disabled = false;
-                authBtn.innerHTML = `<span class="material-symbols-outlined text-sm">lock_open</span><span>Authorize & Connect Account</span>`;
+                authBtn.innerHTML = `<span class="material-symbols-outlined text-sm">lock_open</span><span>Validate & Store API Key</span>`;
             }
 
-            if (titleEl) titleEl.innerText = 'Connect ' + name + ' via OAuth 2.0';
+            if (titleEl) titleEl.innerText = 'Connect ' + name + ' Credential';
             if (bodyEl) {
-                let scopes = 'read:org, repo, read:user, workflow';
-                if (service === 'vercel') scopes = 'user, team, deployment, project';
-                if (service === 'aws') scopes = 'sts:AssumeRole, cloudwatch:PutMetricData, ec2:DescribeInstances';
-                if (service === 'gcp') scopes = 'https://www.googleapis.com/auth/cloud-platform';
-                if (service === 'devin') scopes = 'agent:create_session, agent:get_status, pr:create';
+                let tokenHelpUrl = 'https://vercel.com/account/tokens';
+                if (service === 'github') tokenHelpUrl = 'https://github.com/settings/tokens';
+                if (service === 'render') tokenHelpUrl = 'https://dashboard.render.com/user/settings';
+                if (service === 'devin') tokenHelpUrl = 'https://devin.ai/settings/api-keys';
 
                 bodyEl.innerHTML = `
                     <div class="bg-[#F8F9FA] p-4 rounded-2xl border border-[#DADCE0] space-y-3">
                         <div class="flex items-center justify-between text-xs font-medium">
-                            <span class="text-[#5F6368]">Authentication Gateway:</span>
-                            <span class="text-[#1A73E8] font-mono font-semibold">OAuth 2.0 PKCE (Single Sign-On)</span>
+                            <span class="text-[#5F6368]">Target Gateway:</span>
+                            <span class="text-[#1A73E8] font-mono font-semibold">${name} API</span>
                         </div>
-                        <div class="flex items-center justify-center py-2 space-x-4 bg-white rounded-xl border border-[#DADCE0]/80">
-                            <span class="font-semibold text-sm text-[#1F1F1F]">Cheezer SRE Core</span>
-                            <span class="material-symbols-outlined text-[#1A73E8] text-sm animate-pulse">sync_alt</span>
-                            <span class="font-semibold text-sm text-[#0B57D0]">${name}</span>
+                        <div class="space-y-1.5 text-left">
+                            <label class="text-xs font-bold text-[#1F1F1F]">API Key / Personal Access Token:</label>
+                            <input type="password" id="oauth-token-input" placeholder="Paste your ${name} token or API key..." class="w-full bg-white border border-[#DADCE0] rounded-xl px-3.5 py-2 text-xs text-[#1F1F1F] font-mono focus:outline-none focus:border-[#1A73E8]" />
+                            <div class="flex items-center justify-between text-[11px] text-[#5F6368] pt-1">
+                                <span>Cheezer validates your token live against upstream APIs.</span>
+                                <a href="${tokenHelpUrl}" target="_blank" class="text-[#1A73E8] hover:underline font-medium">Get Token →</a>
+                            </div>
                         </div>
-                        <p class="text-xs text-[#444746] leading-relaxed">
-                            Authorizing grant permissions will securely establish a multi-tenant OAuth 2.0 SSO trust link between Cheezer Core and <strong>${name}</strong> for telemetry, auto-remediation, and deployment governance.
-                        </p>
                         <div class="text-[11px] text-[#5F6368] bg-white p-3 rounded-xl border border-[#DADCE0] space-y-1">
-                            <div>✓ <strong>Scopes Requested:</strong> <code>${scopes}</code></div>
-                            <div>✓ <strong>Redirect URI:</strong> <code>http://localhost:9090/api/oauth/callback</code></div>
-                            <div>✓ <strong>Encryption & Trust:</strong> TLS 1.3 AES-256-GCM Vault</div>
+                            <div>✓ <strong>Validation Method:</strong> Live Upstream HTTP Authorization Probe</div>
+                            <div>✓ <strong>Encryption & Storage:</strong> TLS 1.3 AES-256-GCM Local Vault</div>
                         </div>
                     </div>
                 `;
@@ -2012,34 +2010,37 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             const statusEl = document.getElementById('oauth-modal-status');
             const statusText = document.getElementById('oauth-status-text');
             const authBtn = document.getElementById('oauth-authorize-btn');
+            const tokenInput = document.getElementById('oauth-token-input');
+
+            const tokenVal = tokenInput ? tokenInput.value.trim() : '';
+
+            if (!tokenVal) {
+                alert(`Please enter your ${currentOAuthName} API token or key.`);
+                return;
+            }
 
             if (statusEl) statusEl.classList.remove('hidden');
             if (authBtn) authBtn.disabled = true;
 
-            if (statusText) statusText.innerText = `[1/3] Initiating OAuth PKCE handshake with ${currentOAuthName}...`;
-            await new Promise(r => setTimeout(r, 400));
+            if (statusText) statusText.innerText = `[1/2] Connecting & testing authentication with ${currentOAuthName}...`;
 
-            if (statusText) statusText.innerText = `[2/3] Validating authorization code and exchanging tokens...`;
-            await new Promise(r => setTimeout(r, 400));
-
-            if (statusText) statusText.innerText = `[3/3] Storing encrypted credentials in Cheezer Vault...`;
-            await new Promise(r => setTimeout(r, 300));
-
-            const sampleOAuthToken = 'oauth_' + currentOAuthService + '_sec_' + Math.random().toString(36).substring(2, 10);
-            
             try {
                 const res = await fetch('/api/connections/configure', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ service: currentOAuthService, token: sampleOAuthToken, endpoint: '' })
+                    body: JSON.stringify({ service: currentOAuthService, token: tokenVal, endpoint: '' })
                 });
                 const data = await res.json();
                 closeOAuthModal();
-                alert(`✅ OAuth 2.0 Connection Successful!\n\n${currentOAuthName} has been authorized and connected via Single Sign-On (OAuth 2.0 PKCE).\n\nDetails: ${data.message}`);
+                if (res.ok && data.status === 'success') {
+                    alert(`✅ Connection Verified & Authenticated!\n\n${currentOAuthName} credentials saved successfully.\n\nDetails: ${data.message}`);
+                } else {
+                    alert(`❌ Authentication Probe Failed!\n\n${currentOAuthName} returned error:\n${data.message || 'Invalid API Token (HTTP 403/401)'}`);
+                }
                 fetchConnections();
             } catch (err) {
                 closeOAuthModal();
-                alert(`Error completing OAuth login: ${err}`);
+                alert(`Error connecting to ${currentOAuthName}: ${err}`);
             }
         }
 
@@ -2070,7 +2071,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 let badgeText = '○ UNCONFIGURED';
                 if (isAuth) {
                     badgeClass = 'bg-[#1E8E3E]/15 text-[#1E8E3E] border-[#1E8E3E]/30 font-bold';
-                    badgeText = '● CONNECTED (OAuth 2.0)';
+                    badgeText = '● AUTHENTICATED';
                 } else if (isConfigured) {
                     badgeClass = 'bg-[#1A73E8]/15 text-[#1A73E8] border-[#1A73E8]/30 font-semibold';
                     badgeText = '⚙️ TOKEN STORED';
@@ -2079,33 +2080,24 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                     badgeText = 'ONLINE';
                 }
 
-                let inputPlaceholder = 'Paste ' + conn.name.split(' ')[0] + ' API Token...';
-                if (conn.service === 'k8s') inputPlaceholder = 'Paste ServiceAccount Token or Kubeconfig content...';
-                if (conn.service === 'aws') inputPlaceholder = 'Paste AWS Access Keys (KeyID:SecretKey)...';
-                if (conn.service === 'gcp') inputPlaceholder = 'Paste GCP Service Account JSON...';
-                if (conn.service === 'grafana') inputPlaceholder = 'Paste Grafana API Key / Auth...';
-                if (conn.service === 'github') inputPlaceholder = 'Paste GitHub Personal Access Token...';
-
-                let oauthButtonText = '🔑 Connect via OAuth 2.0';
-                if (conn.service === 'github') oauthButtonText = '🔑 Sign in with GitHub';
-                if (conn.service === 'vercel') oauthButtonText = '🔑 Sign in with Vercel';
-                if (conn.service === 'devin') oauthButtonText = '🤖 Connect Devin AI Account';
-                if (conn.service === 'render') oauthButtonText = '🔑 Sign in with Render';
-                if (conn.service === 'aws') oauthButtonText = '🔑 Connect AWS SSO';
-                if (conn.service === 'gcp') oauthButtonText = '🔑 Connect GCP Identity';
-                if (conn.service === 'k8s') oauthButtonText = '🔑 Connect Cluster Auth';
+                let oauthButtonText = '🔑 Configure Token';
+                if (conn.service === 'github') oauthButtonText = '🔑 Configure GitHub Token';
+                if (conn.service === 'vercel') oauthButtonText = '🔑 Configure Vercel Token';
+                if (conn.service === 'devin') oauthButtonText = '🤖 Configure Devin API Key';
+                if (conn.service === 'render') oauthButtonText = '🔑 Configure Render Key';
+                if (conn.service === 'aws') oauthButtonText = '🔑 Configure AWS Keys';
 
                 let accountInfoHtml = '';
                 if (isAuth) {
                     accountInfoHtml = `
                         <div class="bg-[#F8F9FA] p-3 rounded-xl border border-[#DADCE0] space-y-1 font-mono text-[11px] text-[#444746]">
                             <div class="flex items-center justify-between">
-                                <span class="font-semibold text-[#1F1F1F]">Identity:</span>
-                                <span class="text-[#1E8E3E] font-bold">@zius-dev (OAuth 2.0 PKCE)</span>
+                                <span class="font-semibold text-[#1F1F1F]">Authentication Status:</span>
+                                <span class="text-[#1E8E3E] font-bold">Verified Upstream API Probe</span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="font-semibold text-[#1F1F1F]">Permissions:</span>
-                                <span class="text-[#5F6368]">Full Read/Write, Webhooks & Deployments</span>
+                                <span class="font-semibold text-[#1F1F1F]">Details:</span>
+                                <span class="text-[#5F6368]">${conn.message || 'Active Session Token'}</span>
                             </div>
                         </div>
                     `;
