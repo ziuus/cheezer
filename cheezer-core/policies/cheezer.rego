@@ -1,30 +1,32 @@
 package cheezer.authz
 
-default allow = false
+import rego.v1
 
-deny[msg] {
+default allow := false
+
+deny contains msg if {
     input.action == "delete"
     input.resource == "namespace"
     msg := "CRITICAL: Namespace deletion is absolutely prohibited during autonomous execution."
 }
 
-deny[msg] {
+deny contains msg if {
     input.command[_] == "exec"
     msg := "CRITICAL: Container shell execution is blocked."
 }
 
-deny[msg] {
+deny contains msg if {
     input.action == "scale"
     input.target_replicas > 10
     msg := "CRITICAL: Replica cap exceeded."
 }
 
-deny[msg] {
+deny contains msg if {
     input.action == "modify"
     input.resource == "rbac"
     msg := "CRITICAL: RBAC modification is blocked."
 }
 
-allow {
+allow if {
     count(deny) == 0
 }
