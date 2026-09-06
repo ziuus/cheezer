@@ -603,17 +603,35 @@ pub async fn test_connection(
 ) -> impl IntoResponse {
     log::info!("Testing connection status for: {}", req.name);
     
-    let target_url = match req.name.as_str() {
-        "Kubernetes Cluster API" => "https://kubernetes.default.svc",
-        "AWS Cloud Platform" => "https://ec2.amazonaws.com",
-        "Google Cloud Platform" => "https://compute.googleapis.com",
-        "Vercel REST API Gateway" => "https://api.vercel.com",
-        "Render REST API Gateway" => "https://api.render.com",
-        "GitHub GitOps Repository" => "https://api.github.com",
-        "Devin AI Autonomous Engineer API" => "https://api.devin.ai",
-        "Grafana / OpenTelemetry Collector" => "http://127.0.0.1:9090",
-        _ => "http://127.0.0.1:9090",
+    let service_id = match req.name.as_str() {
+        "Kubernetes Cluster API" => "k8s",
+        "AWS Cloud Platform" => "aws",
+        "Google Cloud Platform" => "gcp",
+        "Vercel REST API Gateway" => "vercel",
+        "Render REST API Gateway" => "render",
+        "GitHub GitOps Repository" => "github",
+        "Devin AI Autonomous Engineer API" => "devin",
+        "Grafana / OpenTelemetry Collector" => "grafana",
+        _ => "",
     };
+
+    let custom_ep = if !service_id.is_empty() {
+        store::get_credential(service_id).ok().flatten().map(|(_, ep, _)| ep).filter(|ep| !ep.trim().is_empty())
+    } else {
+        None
+    };
+
+    let target_url = custom_ep.unwrap_or_else(|| match req.name.as_str() {
+        "Kubernetes Cluster API" => "https://kubernetes.default.svc".to_string(),
+        "AWS Cloud Platform" => "https://ec2.amazonaws.com".to_string(),
+        "Google Cloud Platform" => "https://compute.googleapis.com".to_string(),
+        "Vercel REST API Gateway" => "https://api.vercel.com".to_string(),
+        "Render REST API Gateway" => "https://api.render.com".to_string(),
+        "GitHub GitOps Repository" => "https://api.github.com".to_string(),
+        "Devin AI Autonomous Engineer API" => "https://api.devin.ai".to_string(),
+        "Grafana / OpenTelemetry Collector" => "http://127.0.0.1:9090".to_string(),
+        _ => "http://127.0.0.1:9090".to_string(),
+    });
 
     let start = std::time::Instant::now();
     let client = reqwest::Client::builder()
@@ -622,7 +640,7 @@ pub async fn test_connection(
         .build();
 
     let (status_str, message) = if let Ok(c) = client {
-        match c.get(target_url).send().await {
+        match c.get(&target_url).send().await {
             Ok(resp) => (
                 "success",
                 format!("Live HTTP/TLS handshake verified for '{}' (HTTP {}). Response time: {}ms.", req.name, resp.status(), start.elapsed().as_millis())
@@ -660,13 +678,18 @@ pub async fn get_provider_projects(
     let mut projects = Vec::new();
 
     if p == "vercel" {
-        let token = store::get_credential("vercel").ok().flatten().map(|(t, _, _)| t)
-            .or_else(|| std::env::var("VERCEL_TOKEN").ok())
-            .unwrap_or_default();
+        let (token, custom_ep) = store::get_credential("vercel").ok().flatten().map(|(t, ep, _)| (t, ep))
+            .unwrap_or_else(|| (std::env::var("VERCEL_TOKEN").unwrap_or_default(), "".to_string()));
+
+        let api_url = if !custom_ep.trim().is_empty() {
+            format!("{}/v9/projects", custom_ep.trim_end_matches('/'))
+        } else {
+            "https://api.vercel.com/v9/projects".to_string()
+        };
 
         if !token.trim().is_empty() && client.is_ok() {
             if let Ok(c) = client {
-                let res = c.get("https://api.vercel.com/v9/projects")
+                let res = c.get(&api_url)
                     .header("Authorization", format!("Bearer {}", token.trim()))
                     .send()
                     .await;
@@ -696,13 +719,18 @@ pub async fn get_provider_projects(
             ];
         }
     } else if p == "github" {
-        let token = store::get_credential("github").ok().flatten().map(|(t, _, _)| t)
-            .or_else(|| std::env::var("GITHUB_TOKEN").ok())
-            .unwrap_or_default();
+        let (token, custom_ep) = store::get_credential("github").ok().flatten().map(|(t, ep, _)| (t, ep))
+            .unwrap_or_else(|| (std::env::var("GITHUB_TOKEN").unwrap_or_default(), "".to_string()));
+
+        let api_url = if !custom_ep.trim().is_empty() {
+            format!("{}/user/repos?per_page=30", custom_ep.trim_end_matches('/'))
+        } else {
+            "https://api.github.com/user/repos?per_page=30".to_string()
+        };
 
         if !token.trim().is_empty() && client.is_ok() {
             if let Ok(c) = client {
-                let res = c.get("https://api.github.com/user/repos?per_page=30")
+                let res = c.get(&api_url)
                     .header("Authorization", format!("Bearer {}", token.trim()))
                     .header("Accept", "application/vnd.github+json")
                     .send()
