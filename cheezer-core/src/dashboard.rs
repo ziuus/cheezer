@@ -938,11 +938,11 @@ pub async fn approve_incident(
         }
     };
 
-    if incident.status != "requires_human_intervention" {
+    if incident.status == "executed" || incident.status == "human_approved_and_executed" || incident.status == "rejected_by_operator" {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(json!({
-                "error": format!("Incident {} is in status '{}', expected 'requires_human_intervention'", id, incident.status)
+                "error": format!("Incident {} is already in terminal state '{}'", id, incident.status)
             })),
         ));
     }
@@ -1004,6 +1004,19 @@ pub async fn approve_incident(
             ))
         }
     }
+}
+
+pub async fn reject_incident(
+    Path(id): Path<i64>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    log::info!("Received operator rejection request for incident ID: {}", id);
+
+    let _ = store::update_incident_status(id, "rejected_by_operator");
+    Ok(Json(json!({
+        "status": "rejected_by_operator",
+        "incident_id": id,
+        "message": format!("Incident #{} action rejected by operator.", id)
+    })))
 }
 
 const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
@@ -1886,6 +1899,22 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 } else {
                     alert(`❌ Approval rejected/failed:\n${data.error || JSON.stringify(data)}`);
                     fetchIncidents();
+                }
+            } catch (err) {
+                alert(`Error communicating with server: ${err}`);
+            }
+        }
+
+        async function rejectIncident(id) {
+            if (!confirm(`Are you sure you want to reject the proposed action for incident #${id}?`)) return;
+            try {
+                const res = await fetch(`/api/incidents/${id}/reject`, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`✕ Incident #${id} action rejected.`);
+                    fetchIncidents();
+                } else {
+                    alert(`Error rejecting incident: ${data.error || 'Failed'}`);
                 }
             } catch (err) {
                 alert(`Error communicating with server: ${err}`);
@@ -2906,48 +2935,82 @@ Verification: ${verificationText}
 
             let html = '';
             for (const inc of list) {
-                if (inc.status === 'executed' || inc.status === 'human_approved_and_executed') executed++;
-                else if (inc.status === 'requires_human_intervention') approval++;
-                else if (inc.status === 'blocked' || inc.status === 'blocked_by_opa') blocked++;
+                const isAutoFixApplied = inc.status === 'executed' || inc.status === 'human_approved_and_executed';
+                const needsPermission = inc.status === 'requires_human_intervention' || 
+                                        inc.status === 'manual_approval_required' || 
+                                        inc.status === 'pending_approval' || 
+                                        inc.status === 'circuit_breaker_locked' || 
+                                        inc.status === 'requires_approval' || 
+                                        inc.status === 'pending' || 
+                                        inc.status === 'blocked_by_opa';
+                const isBlocked = inc.status === 'blocked' || inc.status === 'rejected_by_operator';
+
+                if (isAutoFixApplied) executed++;
+                else if (needsPermission) approval++;
+                else if (isBlocked) blocked++;
 
                 let statusBadge = '';
-                if (inc.status === 'requires_human_intervention') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-transparent text-[#0B57D0] border border-[#DADCE0]"><span class="material-symbols-outlined  ">warning</span> Circuit Breaker Locked</span>`;
-                } else if (inc.status === 'executed' || inc.status === 'human_approved_and_executed') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#1E8E3E]/10 text-[#1E8E3E] border border-[#1E8E3E]/30"><span class="material-symbols-outlined  ">check_circle</span> ${inc.status}</span>`;
-                } else if (inc.status === 'blocked' || inc.status === 'blocked_by_opa') {
-                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#D93025]/10 text-[#D93025] border border-[#D93025]/30"><span class="material-symbols-outlined  ">gpp_bad</span> ${inc.status}</span>`;
+                if (needsPermission) {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FFF0F0] text-[#D93025] border border-[#F2B8B5] animate-pulse"><span class="material-symbols-outlined text-sm">lock</span> PERMISSION REQUIRED</span>`;
+                } else if (isAutoFixApplied) {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#E6F4EA] text-[#137333] border border-[#CEEAD6]"><span class="material-symbols-outlined text-sm">check_circle</span> ✓ Fix Applied (${inc.status})</span>`;
+                } else if (inc.status === 'rejected_by_operator') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#F1F3F4] text-[#5F6368] border border-[#DADCE0]"><span class="material-symbols-outlined text-sm">cancel</span> Rejected by Operator</span>`;
+                } else if (isBlocked) {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#D93025]/10 text-[#D93025] border border-[#D93025]/30"><span class="material-symbols-outlined text-sm">gpp_bad</span> ${inc.status}</span>`;
                 } else {
                     statusBadge = `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-[#F1F3F4] text-[#444746] font-mono">${inc.status}</span>`;
                 }
 
                 let modeBadge = `<span class="font-mono text-xs text-[#444746] uppercase">${inc.mode}</span>`;
-                if (inc.mode === 'rule') modeBadge = `<span class="font-mono text-xs text-[#0B57D0] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined  ">bolt</span> RULE</span>`;
-                else if (inc.mode === 'ai') modeBadge = `<span class="font-mono text-xs text-[#9333EA] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined  ">memory</span> AI</span>`;
-                else if (inc.mode === 'fallback') modeBadge = `<span class="font-mono text-xs text-[#0B57D0] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined  ">security</span> FALLBACK</span>`;
+                if (inc.mode === 'rule') modeBadge = `<span class="font-mono text-xs text-[#0B57D0] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined text-sm">bolt</span> RULE</span>`;
+                else if (inc.mode === 'ai') modeBadge = `<span class="font-mono text-xs text-[#9333EA] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined text-sm">memory</span> AI</span>`;
+                else if (inc.mode === 'fallback') modeBadge = `<span class="font-mono text-xs text-[#0B57D0] font-semibold uppercase flex items-center gap-1"><span class="material-symbols-outlined text-sm">security</span> FALLBACK</span>`;
 
-                let actionBtn = '';
-                if (inc.status === 'requires_human_intervention') {
-                    actionBtn = `<button onclick="approveIncident(${inc.id})" class="btn-primary flex items-center gap-2 font-bold px-3 py-1 rounded text-xs transition shadow  flex items-center gap-1"><span class="material-symbols-outlined  ">check</span> Approve</button>`;
+                let actionButtons = '';
+                if (needsPermission) {
+                    actionButtons = `
+                        <button onclick="approveIncident(${inc.id})" class="bg-[#1E8E3E] hover:bg-[#137333] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm whitespace-nowrap">
+                            <span class="material-symbols-outlined text-sm">check_circle</span> Accept & Apply Fix
+                        </button>
+                        <button onclick="dispatchDevin(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#9333EA] border border-[#DADCE0] px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 font-mono whitespace-nowrap shadow-sm">
+                            <span class="material-symbols-outlined text-sm text-[#9333EA]">smart_toy</span> Devin AI Fix
+                        </button>
+                        <button onclick="rejectIncident(${inc.id})" class="bg-white hover:bg-[#FCE8E6] text-[#D93025] border border-[#F2B8B5] px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1 whitespace-nowrap">
+                            <span class="material-symbols-outlined text-sm">close</span> Reject
+                        </button>
+                    `;
+                } else if (isAutoFixApplied) {
+                    actionButtons = `
+                        <span class="text-xs font-mono text-[#1E8E3E] font-bold px-2.5 py-1 bg-[#E6F4EA] rounded-md border border-[#CEEAD6] flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">task_alt</span> Auto-Fix Executed
+                        </span>
+                        <button onclick="dispatchDevin(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#9333EA] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono">
+                            <span class="material-symbols-outlined text-sm">smart_toy</span> Devin PR
+                        </button>
+                    `;
+                } else {
+                    actionButtons = `
+                        <button onclick="dispatchDevin(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#9333EA] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono font-bold shadow-sm">
+                            <span class="material-symbols-outlined text-sm text-[#9333EA]">smart_toy</span> Devin AI Fix
+                        </button>
+                    `;
                 }
 
                 html += `
                     <tr class="hover:bg-[#F1F3F4] transition">
-                        <td class="py-3 px-4 font-mono text-[#444746]">#${inc.id}</td>
-                        <td class="py-3 px-4 font-mono text-xs text-[#444746]">${inc.timestamp || '-'}</td>
-                        <td class="py-3 px-4 font-semibold text-[#1F1F1F]">${inc.signature}</td>
-                        <td class="py-3 px-4"><span class="text-xs px-2 py-0.5 rounded bg-[#F1F3F4] text-[#444746] font-mono">${inc.severity}</span></td>
-                        <td class="py-3 px-4">${modeBadge}</td>
-                        <td class="py-3 px-4 font-mono text-xs text-[#444746]">${inc.action}</td>
-                        <td class="py-3 px-4">${statusBadge}</td>
-                        <td class="py-3 px-4 text-right flex items-center justify-end space-x-2">
+                        <td class="py-3.5 px-4 font-mono text-[#444746] font-bold">#${inc.id}</td>
+                        <td class="py-3.5 px-4 font-mono text-xs text-[#444746]">${inc.timestamp || '-'}</td>
+                        <td class="py-3.5 px-4 font-semibold text-[#1F1F1F]">${inc.signature}</td>
+                        <td class="py-3.5 px-4"><span class="text-xs px-2 py-0.5 rounded bg-[#F1F3F4] text-[#444746] font-mono">${inc.severity}</span></td>
+                        <td class="py-3.5 px-4">${modeBadge}</td>
+                        <td class="py-3.5 px-4 font-mono text-xs text-[#444746] font-medium">${inc.action}</td>
+                        <td class="py-3.5 px-4">${statusBadge}</td>
+                        <td class="py-3.5 px-4 text-right flex items-center justify-end space-x-2">
                             <button onclick="viewIncidentDoc(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#0B57D0] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono">
-                                <span class="material-symbols-outlined   text-[#0B57D0]">description</span> Doc
+                                <span class="material-symbols-outlined text-sm text-[#0B57D0]">description</span> Doc
                             </button>
-                            <button onclick="dispatchDevin(${inc.id})" class="bg-white hover:bg-[#F3F6FC] text-[#9333EA] border border-[#DADCE0] px-2.5 py-1 rounded text-xs transition flex items-center gap-1 font-mono font-bold shadow shadow-sm">
-                                <span class="material-symbols-outlined   text-[#9333EA]">smart_toy</span> Devin AI Fix
-                            </button>
-                            ${actionBtn}
+                            ${actionButtons}
                         </td>
                     </tr>
                 `;
