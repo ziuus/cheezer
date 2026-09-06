@@ -81,17 +81,26 @@ pub async fn get_logs_json() -> impl IntoResponse {
     Json(json!({ "logs": logs }))
 }
 
+pub async fn clear_stale_incidents_handler() -> impl IntoResponse {
+    let count = store::clear_stale_incidents().unwrap_or(0);
+    Json(json!({
+        "status": "success",
+        "message": format!("Cleaned up {} stale test records", count)
+    }))
+}
+
 pub async fn get_metrics_json() -> impl IntoResponse {
     let incidents = store::get_incidents().unwrap_or_default();
-    let total = incidents.len();
-    let executed = incidents.iter().filter(|i| i.status == "executed" || i.status == "human_approved_and_executed").count();
-    let blocked = incidents.iter().filter(|i| i.status == "blocked" || i.status == "blocked_by_opa").count();
-    let approval = incidents.iter().filter(|i| i.status == "requires_human_intervention").count();
-    let rule_count = incidents.iter().filter(|i| i.mode == "rule").count();
-    let ai_count = incidents.iter().filter(|i| i.mode == "ai").count();
+    let valid_incidents: Vec<_> = incidents.into_iter().filter(|i| i.status != "Aborted_StaleState").collect();
+    let total = valid_incidents.len();
+    let executed = valid_incidents.iter().filter(|i| i.status == "executed" || i.status == "human_approved_and_executed").count();
+    let blocked = valid_incidents.iter().filter(|i| i.status == "blocked" || i.status == "blocked_by_opa" || i.status == "rejected_by_operator").count();
+    let approval = valid_incidents.iter().filter(|i| i.status == "requires_human_intervention" || i.status == "manual_approval_required" || i.status == "pending_approval" || i.status == "circuit_breaker_locked" || i.status == "requires_approval").count();
+    let rule_count = valid_incidents.iter().filter(|i| i.mode == "rule").count();
+    let ai_count = valid_incidents.iter().filter(|i| i.mode == "ai").count();
 
-    let success_rate = if total > 0 { (executed as f64 / total as f64) * 100.0 } else { 0.0 };
-    let rule_percent = if total > 0 { (rule_count as f64 / total as f64) * 100.0 } else { 0.0 };
+    let success_rate = if total > 0 { (executed as f64 / total as f64) * 100.0 } else { 100.0 };
+    let rule_percent = if total > 0 { (rule_count as f64 / total as f64) * 100.0 } else { 100.0 };
     let ai_percent = if total > 0 { (ai_count as f64 / total as f64) * 100.0 } else { 0.0 };
 
     let targets = store::get_monitored_targets().unwrap_or_default();
@@ -1176,10 +1185,16 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                         </h2>
                         <p class="text-xs text-[#444746] mt-0.5">Real-time audit log of rule evaluations, LLM escalations, and human intervention locks</p>
                     </div>
-                    <button onclick="fetchIncidents()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
-                        <span class="material-symbols-outlined  ">refresh</span>
-                        <span>Refresh Stream</span>
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="clearStaleIncidents()" class="text-xs font-mono bg-white hover:bg-[#FCE8E6] text-[#D93025] px-3.5 py-1.5 rounded-lg border border-[#F2B8B5] transition flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm">cleaning_services</span>
+                            <span>Purge Stale Test Logs</span>
+                        </button>
+                        <button onclick="fetchIncidents()" class="text-xs font-mono bg-white hover:bg-[#F3F6FC] text-[#444746] px-3.5 py-1.5 rounded-lg border border-[#E8EAED]/80 transition flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm">refresh</span>
+                            <span>Refresh Stream</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -1918,6 +1933,19 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 }
             } catch (err) {
                 alert(`Error communicating with server: ${err}`);
+            }
+        }
+
+        async function clearStaleIncidents() {
+            if (!confirm("Clean up all stale test records ('Aborted_StaleState') from incident history?")) return;
+            try {
+                const res = await fetch('/api/incidents/clear_stale', { method: 'POST' });
+                const data = await res.json();
+                alert(`🧹 ${data.message || 'Stale test records cleared.'}`);
+                fetchIncidents();
+                fetchMetrics();
+            } catch (err) {
+                alert(`Error purging stale records: ${err}`);
             }
         }
 

@@ -599,6 +599,12 @@ fn get_process_cpu_percent() -> f32 {
     1.4
 }
 
+pub fn clear_stale_incidents() -> Result<usize> {
+    let conn = get_db().lock().unwrap();
+    let count = conn.execute("DELETE FROM incidents WHERE status = 'Aborted_StaleState'", [])?;
+    Ok(count)
+}
+
 pub fn get_closed_loop_stats() -> Result<ClosedLoopStats> {
     let conn = get_db().lock().unwrap();
     let total: i64 = conn.query_row("SELECT COUNT(*) FROM predictions_log", [], |r| r.get(0)).unwrap_or(0);
@@ -606,7 +612,7 @@ pub fn get_closed_loop_stats() -> Result<ClosedLoopStats> {
     let false_positives: i64 = conn.query_row("SELECT COUNT(*) FROM predictions_log WHERE outcome = 'false_positive'", [], |r| r.get(0)).unwrap_or(0);
     let prevented: i64 = conn.query_row("SELECT COUNT(*) FROM predictions_log WHERE outcome = 'prevented'", [], |r| r.get(0)).unwrap_or(0);
     
-    let total_incidents: i64 = conn.query_row("SELECT COUNT(*) FROM incidents", [], |r| r.get(0)).unwrap_or(0);
+    let total_incidents: i64 = conn.query_row("SELECT COUNT(*) FROM incidents WHERE status NOT IN ('Aborted_StaleState')", [], |r| r.get(0)).unwrap_or(0);
     let executed_incidents: i64 = conn.query_row("SELECT COUNT(*) FROM incidents WHERE status IN ('executed', 'human_approved_and_executed')", [], |r| r.get(0)).unwrap_or(0);
 
     let remediation_success_rate = if total_incidents > 0 {

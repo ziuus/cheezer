@@ -37,6 +37,7 @@ pub fn create_router() -> Router {
         .route("/api/incidents", get(dashboard::get_incidents_json))
         .route("/api/incidents/{id}/approve", post(dashboard::approve_incident))
         .route("/api/incidents/{id}/reject", post(dashboard::reject_incident))
+        .route("/api/incidents/clear_stale", post(dashboard::clear_stale_incidents_handler))
         .route("/api/alerts/simulate", post(dashboard::simulate_alert))
         .route("/api/circuit_breaker/reset", post(dashboard::reset_circuit_breaker))
         .route("/api/logs", get(dashboard::get_logs_json))
