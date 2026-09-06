@@ -321,6 +321,7 @@ dependencies = [
  "base64",
  "chrono",
  "env_logger",
+ "futures",
  "k8s-openapi",
  "kube",
  "log",

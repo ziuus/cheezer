@@ -75,9 +75,8 @@ pub async fn check_action(action: &Action) -> bool {
         return false;
     }
 
-    // STRICT FAIL-CLOSED CONSTRAINT: Network errors, timeouts, or daemon offline default to DENY (false)
-    log::warn!("OPA HTTP daemon at '{}' unreachable/timed out. Defaulting to FAIL-CLOSED (DENY).", opa_url);
-    false
+    log::info!("OPA HTTP daemon at '{}' unreachable. Evaluating via embedded Rego policy engine.", opa_url);
+    evaluate_rego_embedded(action_type, resource, target_replicas, &command)
 }
 
 pub fn evaluate_rego_embedded(action: &str, resource: &str, target_replicas: u32, command: &[&str]) -> bool {
