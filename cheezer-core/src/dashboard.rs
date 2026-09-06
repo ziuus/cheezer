@@ -964,7 +964,7 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
     <div class="relative z-10 w-full">
         <!-- Header -->
         <header class="flex items-center justify-between bg-[#FFFFFF] px-6 py-3 border-b border-[#DADCE0]">
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-4 cursor-pointer" onclick="switchTab('incidents')">
                 <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center">
                     <!-- Clean Google-style Logo Icon -->
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -978,22 +978,28 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 </h1>
             </div>
             
-            <!-- Clean utility section (e.g. Account, Settings icons) -->
+            <!-- Clean utility section (Kill-Switch, Help, Settings, User Avatar) -->
             <div class="flex items-center space-x-3 text-[#5F6368]">
-                <button class="w-10 h-10 rounded-full hover:bg-[#F8F9FA] flex items-center justify-center transition">
-                    <span class="material-symbols-outlined">help</span>
+                <!-- Master Autonomous Kill-Switch Button -->
+                <button id="kill-switch-btn" onclick="toggleKillSwitch()" title="Toggle Master Operator Autonomous Mode" class="flex items-center space-x-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold transition cursor-pointer shadow-sm">
+                    <span id="kill-switch-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="kill-switch-text">ENGINE ACTIVE</span>
                 </button>
-                <button class="w-10 h-10 rounded-full hover:bg-[#F8F9FA] flex items-center justify-center transition">
-                    <span class="material-symbols-outlined">settings</span>
+
+                <button onclick="openHelpModal()" title="Help & System Architecture" class="w-9 h-9 rounded-full hover:bg-[#F8F9FA] border border-transparent hover:border-[#DADCE0] flex items-center justify-center transition cursor-pointer">
+                    <span class="material-symbols-outlined text-[20px]">help</span>
                 </button>
-                <div class="w-8 h-8 rounded-full bg-[#1A73E8] text-white flex items-center justify-center text-sm font-medium ml-2 cursor-pointer">
+                <button onclick="switchTab('settings')" title="Settings" class="w-9 h-9 rounded-full hover:bg-[#F8F9FA] border border-transparent hover:border-[#DADCE0] flex items-center justify-center transition cursor-pointer">
+                    <span class="material-symbols-outlined text-[20px]">settings</span>
+                </button>
+                <div onclick="switchTab('settings')" title="Account & Settings" class="w-8 h-8 rounded-full bg-[#1A73E8] text-white flex items-center justify-center text-sm font-medium ml-1 cursor-pointer shadow-sm">
                     A
                 </div>
             </div>
         </header>
 
         <!-- Navigation Tab Bar -->
-        <nav class="flex flex-wrap items-center space-x-2 my-6 border-b border-[#DADCE0] pb-2 gap-y-2">
+        <nav class="flex flex-wrap items-center space-x-2 my-6 border-b border-[#DADCE0] pb-2 gap-y-2 px-6">
             <a id="tab-btn-incidents" href="/incidents" onclick="switchTab('incidents'); return false;" class="__TAB_BTN_CLASS_INCIDENTS__">
                 <span class="material-symbols-outlined  ">gpp_maybe</span>
                 <span>Live Incidents & Circuit Breakers</span>
@@ -1280,6 +1286,64 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
             </div>
         </div>
 
+        <!-- HELP & SYSTEM ARCHITECTURE MODAL -->
+        <div id="help-modal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 transition-all duration-200">
+            <div class="bg-white border border-[#DADCE0] rounded-3xl p-6 w-full max-w-2xl shadow-2xl space-y-5 animate-in fade-in zoom-in duration-150">
+                <!-- Header -->
+                <div class="flex items-center justify-between border-b border-[#DADCE0] pb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-2xl bg-[#1A73E8]/10 text-[#1A73E8] flex items-center justify-center border border-[#1A73E8]/20">
+                            <span class="material-symbols-outlined text-xl">help_outline</span>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-[#1F1F1F]">Cheezer Core — System & Safety Reference</h3>
+                            <p class="text-xs text-[#5F6368]">Autonomous Reliability & Bounded Remediation Control Plane</p>
+                        </div>
+                    </div>
+                    <button onclick="closeHelpModal()" class="w-8 h-8 rounded-full hover:bg-[#F1F3F4] text-[#5F6368] flex items-center justify-center transition">
+                        <span class="material-symbols-outlined text-lg">close</span>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="space-y-4 text-xs text-[#3C4043] leading-relaxed max-h-[60vh] overflow-y-auto pr-2">
+                    <div class="bg-[#F8F9FA] p-4 rounded-2xl border border-[#DADCE0] space-y-2">
+                        <h4 class="font-bold text-[#1F1F1F] flex items-center gap-1.5 text-sm">
+                            <span class="material-symbols-outlined text-[#1A73E8]">power_settings_new</span>
+                            Emergency Master Kill-Switch
+                        </h4>
+                        <p>Click the <strong>ENGINE ACTIVE / KILL-SWITCH ENGAGED</strong> toggle button in the top navigation bar to instantly enable or disable all automated infrastructure mutations. API route: <code>POST /api/system/toggle</code>.</p>
+                    </div>
+
+                    <div class="bg-[#F8F9FA] p-4 rounded-2xl border border-[#DADCE0] space-y-2">
+                        <h4 class="font-bold text-[#1F1F1F] flex items-center gap-1.5 text-sm">
+                            <span class="material-symbols-outlined text-[#34A853]">shield</span>
+                            7-Stage Safety Pipeline
+                        </h4>
+                        <p>Every alert passes through: <strong>Predict → Prevent → Detect → Reason → Authorize (OPA) → Remediate (TOCTOU + Guard) → Verify (Synthetic Probe) → Learn</strong>.</p>
+                    </div>
+
+                    <div class="bg-[#F8F9FA] p-4 rounded-2xl border border-[#DADCE0] space-y-2">
+                        <h4 class="font-bold text-[#1F1F1F] flex items-center gap-1.5 text-sm">
+                            <span class="material-symbols-outlined text-[#EA4335]">lock</span>
+                            Manual Authorization & Approval
+                        </h4>
+                        <p>When an alert triggers RemediationGuard throttling (3+ fixes in 5 mins), status flips to <code>requires_human_intervention</code>. Open <strong>Audit History</strong> or <strong>Incidents</strong> to inspect and click <strong>Approve & Execute Fix</strong>.</p>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="flex items-center justify-between pt-3 border-t border-[#DADCE0]">
+                    <a href="/docs/CHEEZER_PITCH_DECK_PRESENTATION.md" target="_blank" class="text-xs text-[#1A73E8] hover:underline flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">description</span> View Full System Spec
+                    </a>
+                    <button onclick="closeHelpModal()" class="px-6 py-2.5 rounded-full text-xs font-medium bg-[#1A73E8] hover:bg-[#174EA6] text-white shadow-md transition">
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- PAGE 3: MONITOR & TELEMETRY -->
         <div id="tab-content-metrics" class="__TAB_CONTENT_CLASS_METRICS__">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1526,6 +1590,22 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
 
     <script>
         let allLogs = [];
+
+        function openHelpModal() {
+            const modal = document.getElementById('help-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeHelpModal() {
+            const modal = document.getElementById('help-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
 
         function initLucideIcons() {
             if (window.lucide) {
