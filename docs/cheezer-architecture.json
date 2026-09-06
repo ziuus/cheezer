@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Cheezer Core — Autonomous Reliability Control Plane",
+    "output": "cheezer-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "fast-path",
+        "label": "Sub-millisecond Rust Fast Path",
+        "focus": ["otel-collector", "triage-engine", "toctou-check", "opa-policy", "executor"],
+        "note": "Known incident signatures execute direct API mutations in < 1ms bypassing network and AI latency."
+      },
+      {
+        "id": "predictive-flow",
+        "label": "Predictive Failure Forecasting",
+        "focus": ["otel-collector", "predictive-engine", "remediation-guard", "opa-policy", "executor"],
+        "note": "Linear trends & EWMA anomalies trigger preventive self-healing before outages occur."
+      },
+      {
+        "id": "safety-and-ha",
+        "label": "Safety Gates & HA Watchdog",
+        "focus": ["toctou-check", "remediation-guard", "opa-policy", "watchdog-ha", "sqlite-store"],
+        "note": "Fail-closed OPA Rego gate, TOCTOU state revalidation, and Primary-Standby leader lease locks."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "otel-collector",
+      "type": "external",
+      "label": "Grafana / OTel Collector",
+      "sublabel": "Webhook Ingestion :9090",
+      "pos": [40, 300],
+      "size": [170, 64]
+    },
+    {
+      "id": "triage-engine",
+      "type": "backend",
+      "label": "Rust Fast-Path Triage",
+      "sublabel": "In-Process Rules < 1ms",
+      "pos": [290, 300],
+      "size": [160, 64]
+    },
+    {
+      "id": "predictive-engine",
+      "type": "backend",
+      "label": "Predictive Risk Engine",
+      "sublabel": "EWMA / Trend / Holt-Winters",
+      "pos": [290, 120],
+      "size": [160, 64],
+      "tag": "Prob ≥ 70%"
+    },
+    {
+      "id": "llm-router",
+      "type": "backend",
+      "label": "6-Tier Escalation Router",
+      "sublabel": "Confidence-Gated AI Router",
+      "pos": [290, 480],
+      "size": [160, 64],
+      "tag": "~99% Cost Saved"
+    },
+    {
+      "id": "toctou-check",
+      "type": "security",
+      "label": "TOCTOU Revalidation",
+      "sublabel": "Live State Freshness :12ms",
+      "pos": [540, 300],
+      "size": [160, 64],
+      "tag": "State Freshness"
+    },
+    {
+      "id": "remediation-guard",
+      "type": "security",
+      "label": "RemediationGuard Budget",
+      "sublabel": "Disruption Limit 3 / 15m",
+      "pos": [790, 120],
+      "size": [170, 64]
+    },
+    {
+      "id": "opa-policy",
+      "type": "security",
+      "label": "OPA Policy Gate",
+      "sublabel": "Fail-Closed Rego Rules",
+      "pos": [790, 300],
+      "size": [170, 64],
+      "tag": "Fail-Closed"
+    },
+    {
+      "id": "executor",
+      "type": "cloud",
+      "label": "Direct API Executor",
+      "sublabel": "K8s / AWS / Vercel Mutation",
+      "pos": [1040, 300],
+      "size": [160, 64]
+    },
+    {
+      "id": "sqlite-store",
+      "type": "database",
+      "label": "SQLite WAL Audit DB",
+      "sublabel": "cheezer.db",
+      "pos": [1040, 120],
+      "size": [160, 64]
+    },
+    {
+      "id": "watchdog-ha",
+      "type": "security",
+      "label": "Dual-Node HA Watchdog",
+      "sublabel": "TCP Proof-of-Life & Lease",
+      "pos": [540, 480],
+      "size": [160, 64],
+      "tag": "Leader Lease"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Out-of-Band Control Plane Node",
+      "wraps": ["triage-engine", "predictive-engine", "llm-router", "toctou-check", "remediation-guard", "opa-policy", "executor", "sqlite-store", "watchdog-ha"]
+    },
+    {
+      "kind": "security-group",
+      "label": "7-Stage Execution Safety Lifecycle",
+      "wraps": ["toctou-check", "remediation-guard", "opa-policy"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "ingest-to-triage",
+      "from": "otel-collector",
+      "to": "triage-engine",
+      "label": "Alert Webhook",
+      "variant": "emphasis"
+    },
+    {
+      "id": "ingest-to-predictive",
+      "from": "otel-collector",
+      "to": "predictive-engine",
+      "label": "Metric History",
+      "fromSide": "top",
+      "toSide": "left"
+    },
+    {
+      "id": "predictive-to-triage",
+      "from": "predictive-engine",
+      "to": "triage-engine",
+      "label": "TTF & Risk",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [370, 225]
+    },
+    {
+      "id": "triage-to-llm",
+      "from": "triage-engine",
+      "to": "llm-router",
+      "label": "Novel Alert",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [370, 405]
+    },
+    {
+      "id": "triage-to-toctou",
+      "from": "triage-engine",
+      "to": "toctou-check",
+      "label": "< 1ms Fast Path",
+      "variant": "emphasis",
+      "labelAt": [495, 275]
+    },
+    {
+      "id": "predictive-to-guard",
+      "from": "predictive-engine",
+      "to": "remediation-guard",
+      "label": "Preventive Action",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "toctou-to-opa",
+      "from": "toctou-check",
+      "to": "opa-policy",
+      "label": "Re-validated",
+      "variant": "security",
+      "labelAt": [745, 275]
+    },
+    {
+      "id": "guard-to-opa",
+      "from": "remediation-guard",
+      "to": "opa-policy",
+      "label": "Budget OK",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [875, 225]
+    },
+    {
+      "id": "opa-to-executor",
+      "from": "opa-policy",
+      "to": "executor",
+      "label": "Rego Passed",
+      "variant": "security",
+      "labelAt": [1000, 275]
+    },
+    {
+      "id": "executor-to-db",
+      "from": "executor",
+      "to": "sqlite-store",
+      "label": "Audit Record",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "watchdog-to-toctou",
+      "from": "watchdog-ha",
+      "to": "toctou-check",
+      "label": "Leader Lease",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Predictive Engine",
+      "items": [
+        "Dynamic time-series metric extrapolation",
+        "Adaptive model selector: EWMA, Linear Regression, Holt-Winters, Local ML",
+        "Forecasts failure breaches with time-to-failure (TTF mins) & confidence score"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Sub-ms Execution & Cost Optimization",
+      "items": [
+        "Rust rule-first fast path executes known patterns in < 1ms ($0.00 cost)",
+        "Confidence-gated 6-tier escalation ladder saves ~99% of LLM compute costs",
+        "Risk-adaptive telemetry resolution cuts shipping bandwidth by 88.5%"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Fail-Closed Safety & HA Protection",
+      "items": [
+        "TOCTOU state revalidation verifies freshness 12ms before mutation",
+        "RemediationGuard disruption budget halts flapping cascades (max 3/15m)",
+        "Dual-Node HA Watchdog with TCP proof-of-life & Kubernetes leader lease lock"
+      ]
+    }
+  ]
+}
