@@ -978,13 +978,20 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
                 </h1>
             </div>
             
-            <!-- Clean utility section (Kill-Switch, Help, Settings, User Avatar) -->
+            <!-- Clean utility section (Google M3 Autonomous Switch, Help, Settings, User Avatar) -->
             <div class="flex items-center space-x-3 text-[#5F6368]">
-                <!-- Master Autonomous Kill-Switch Button -->
-                <button id="kill-switch-btn" onclick="toggleKillSwitch()" title="Toggle Master Operator Autonomous Mode" class="flex items-center space-x-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-700 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold transition cursor-pointer shadow-sm">
-                    <span id="kill-switch-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span id="kill-switch-text">ENGINE ACTIVE</span>
-                </button>
+                <!-- Google Material 3 Autonomous Switch Control -->
+                <div class="flex items-center space-x-3 mr-1 bg-[#F0F4F9] hover:bg-[#E8EEF5] px-3.5 py-1.5 rounded-full border border-[#D3E3FD] transition cursor-pointer select-none" onclick="toggleKillSwitch()" title="Click to toggle Autonomous Execution Mode">
+                    <div class="flex flex-col text-left">
+                        <span class="text-[10px] font-semibold text-[#444746] tracking-wider uppercase leading-none" style="font-family: 'Google Sans', sans-serif;">Autonomous Fixes</span>
+                        <span id="kill-switch-text" class="text-[11px] font-bold text-[#0B57D0] leading-tight">ACTIVE</span>
+                    </div>
+                    <button id="kill-switch-btn" type="button" role="switch" aria-checked="true" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-[#0B57D0]">
+                        <span id="kill-switch-dot" class="pointer-events-none translate-x-5 inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center">
+                            <span id="kill-switch-icon" class="material-symbols-outlined text-[13px] text-[#0B57D0] font-bold">check</span>
+                        </span>
+                    </button>
+                </div>
 
                 <button onclick="openHelpModal()" title="Help & System Architecture" class="w-9 h-9 rounded-full hover:bg-[#F8F9FA] border border-transparent hover:border-[#DADCE0] flex items-center justify-center transition cursor-pointer">
                     <span class="material-symbols-outlined text-[20px]">help</span>
@@ -1678,17 +1685,30 @@ const DASHBOARD_HTML: &str = r##"<!DOCTYPE html>
         function updateKillSwitchUI(active) {
             const btn = document.getElementById('kill-switch-btn');
             const dot = document.getElementById('kill-switch-dot');
+            const icon = document.getElementById('kill-switch-icon');
             const txt = document.getElementById('kill-switch-text');
             if (!btn || !dot || !txt) return;
 
             if (active) {
-                btn.className = "flex items-center space-x-2 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 text-emerald-300 px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition cursor-pointer shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-emerald-500/10";
-                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
-                txt.innerText = "ENGINE ACTIVE";
+                btn.className = "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-[#0B57D0]";
+                dot.className = "pointer-events-none translate-x-5 inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center";
+                if (icon) {
+                    icon.innerText = "check";
+                    icon.className = "material-symbols-outlined text-[13px] text-[#0B57D0] font-bold";
+                }
+                txt.innerText = "ACTIVE";
+                txt.className = "text-[11px] font-bold text-[#0B57D0] leading-tight";
+                btn.setAttribute("aria-checked", "true");
             } else {
-                btn.className = "flex items-center space-x-2 bg-rose-950/60 hover:bg-rose-900/80 border border-rose-500/60 text-rose-300 px-3.5 py-2 rounded-lg text-xs font-mono font-bold transition cursor-pointer shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] shadow-rose-500/20";
-                dot.className = "w-2.5 h-2.5 rounded-full bg-[#D93025] animate-ping";
-                txt.innerText = "KILL-SWITCH ENGAGED";
+                btn.className = "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-[#747775]";
+                dot.className = "pointer-events-none translate-x-0 inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center";
+                if (icon) {
+                    icon.innerText = "close";
+                    icon.className = "material-symbols-outlined text-[13px] text-[#747775] font-bold";
+                }
+                txt.innerText = "PAUSED";
+                txt.className = "text-[11px] font-bold text-[#B3261E] leading-tight";
+                btn.setAttribute("aria-checked", "false");
             }
         }
 
