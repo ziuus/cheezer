@@ -70,6 +70,8 @@ pub async fn check_action(action: &Action) -> bool {
                     return allow;
                 }
             }
+            log::warn!("OPA daemon returned no boolean 'result' for '{opa_url}': the authz policy is undefined or failed to load. Defaulting to FAIL-CLOSED (DENY).");
+            return false;
         }
         log::warn!("OPA HTTP daemon returned non-success response: {status}. Defaulting to FAIL-CLOSED (DENY).");
         return false;
@@ -200,5 +202,38 @@ mod tests {
             std::env::set_var("MOCK_OPA_ENABLED", "true");
         }
         println!("SUCCESS: OPA fail-closed check on HTTP 500 error verified!");
+    }
+
+    #[tokio::test]
+    async fn test_opa_fail_closed_on_undefined_result() {
+        let _guard = crate::triage::tests::TEST_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
+
+        let mock_server = MockServer::start().await;
+
+        // A daemon that failed to load the policy answers 200 with an empty document
+        Mock::given(method("POST"))
+            .and(path("/v1/data/cheezer/authz/allow"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+            .mount(&mock_server)
+            .await;
+
+        unsafe {
+            std::env::remove_var("MOCK_OPA_ENABLED");
+            std::env::set_var("OPA_URL", format!("{}/v1/data/cheezer/authz/allow", mock_server.uri()));
+        }
+
+        let restart_action = Action::RestartPod {
+            pod: "test-pod-undefined".to_string(),
+            namespace: "default".to_string(),
+        };
+
+        let is_allowed = check_action(&restart_action).await;
+        assert!(!is_allowed, "Undefined OPA result MUST default to FAIL-CLOSED (false)!");
+
+        unsafe {
+            std::env::remove_var("OPA_URL");
+            std::env::set_var("MOCK_OPA_ENABLED", "true");
+        }
+        println!("SUCCESS: OPA fail-closed check on undefined policy result verified!");
     }
 }
