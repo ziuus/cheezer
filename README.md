@@ -4,6 +4,10 @@
 
 Cheezer is an intelligent, policy-gated automation engine designed for out-of-band Kubernetes incident response. Built for high security, zero-trust execution, and zero-AI cost for common issues, Cheezer triages cluster alerts, executes deterministic remediations for known fault patterns, and safely escalates novel incidents to an LLM under strict security bounds.
 
+> Building this in the open — if it saves you time, a star helps others find it.
+> Found a bug, or have an idea? [Open an issue](https://github.com/ziuus/cheezer/issues).
+> New deterministic remediation patterns welcome.
+
 ---
 
 ## 📌 Attribution & Architectural Inspiration
